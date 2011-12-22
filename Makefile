@@ -1,7 +1,7 @@
 .PHONY: clean
 
 cp.min.js: cp.js
-	uglifyjs cp.js > cp.min.js
+	uglifyjs $+ > $@
 
 js = chipmunk.js \
 		 cpVect.js \
@@ -18,11 +18,19 @@ js = chipmunk.js \
 		 cpSpaceQuery.js \
 		 cpSpaceStep.js
 
-cp.js: cpConstraints.js $(js)
-	cat $(js) cpConstraints.js > cp.js
+constraints = \
+		util.js \
+		cpConstraint.js
 
-cpConstraints.js:
-	cat constraints/util.js constraints/cpConstraint.js > cpConstraints.js
+
+jsfiles = $(addprefix lib/, $(js))
+constraintfiles = $(addprefix lib/constraints/, $(constraints))
+
+cp.js: $(jsfiles) cpConstraints.js
+	cat $+ > $@
+
+cpConstraints.js: $(constraintfiles)
+	cat $(constraintfiles) > $@
 
 clean:
 	rm -f cp.js cp.min.js cpConstraints.js
