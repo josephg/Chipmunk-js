@@ -30,7 +30,10 @@ cp.js: $(jsfiles) cpConstraints.js
 	cat $+ > $@
 
 cpConstraints.js: $(constraintfiles)
-	cat $(constraintfiles) > $@
+	cat $+ > $@
+
+bench.js: $(jsfiles) cpConstraints.js benchmark/bench.js
+	cat $+ > $@
 
 clean:
 	rm -f cp.js cp.min.js cpConstraints.js
