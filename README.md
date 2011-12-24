@@ -29,14 +29,40 @@ cpMomentForPoly(mass, numVerts, *verts, offset);
 momentForPoly(mass, verts, offset);
     ```
 
-## Example
+## On a website
+
+```html
+<script src="cp.min.js"></script>
+
+<script>
+var space = new cp.Space();
+space.addBody(new cp.Body(...))
+// ...
+</script>
+```
+
+If any exceptions are thrown or anything, use `cp.js` instead and post the stack trace you get to the issue page.
+
+## From nodejs
+
+`npm install chipmunk`
+
+```javascript
+cp = require('chipmunk');
+
+var space = new cp.Space();
+space.addBody(new cp.Body(...))
+// ...
+```
+
+# Example
 
 This code creates a new space, sets 10 physics iterations per update (these increase simulation stability). Then it adds a bunch of line segments to the space.
 
 In C, this code looked like:
 
 ```C
-  space = cpSpaceNew();
+  cpSpace *space = cpSpaceNew();
   space->iterations = 10;
   
   cpVect offset = cpv(-320, -240);
@@ -50,7 +76,7 @@ In C, this code looked like:
 In javascript, the equivalent code is:
 
 ```javascript
-  space = new cp.Space();
+  var space = new cp.Space();
   space.iterations = 10;
   
   var offset = new cp.Vect(-320, -240);
