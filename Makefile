@@ -27,7 +27,9 @@ jsfiles = $(addprefix lib/, $(js))
 constraintfiles = $(addprefix lib/constraints/, $(constraints))
 
 cp.js: $(jsfiles) cpConstraints.js
-	cat $+ > $@
+	echo '(function(){' > $@
+	cat $+ >> $@
+	echo "})();" >> $@
 
 cpConstraints.js: $(constraintfiles)
 	cat $+ > $@
@@ -36,4 +38,4 @@ bench.js: $(jsfiles) cpConstraints.js benchmark/mersenne.js benchmark/bench.js
 	cat $+ > $@
 
 clean:
-	rm -f cp.js cp.min.js cpConstraints.js
+	rm -f cp.js cp.min.js cpConstraints.js bench.js
