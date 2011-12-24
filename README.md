@@ -29,6 +29,8 @@ cpMomentForPoly(mass, numVerts, *verts, offset);
 momentForPoly(mass, verts, offset);
     ```
 
+- Some trivial getters and setters have been removed. Access the property directly.
+
 ## On a website
 
 ```html
@@ -68,7 +70,7 @@ In C, this code looked like:
   cpVect offset = cpv(-320, -240);
   for(int i=0; i<(bouncy_terrain_count - 1); i++){
     cpVect a = bouncy_terrain_verts[i], b = bouncy_terrain_verts[i+1];
-    cpShape *shape = cpSpaceAddShape(space, cpSegmentShapeNew(space->staticBody, cpvadd(a, offset), cpvadd(b, offset), 0.0f));
+    cpShape *shape = cpSpaceAddShape(space, cpSegmentShapeNew(cpSpaceGetStaticBody(space), cpvadd(a, offset), cpvadd(b, offset), 0.0f));
     cpShapeSetElasticity(shape, 1.0f);
   }
 ```
