@@ -20,7 +20,7 @@ var simple_terrain_verts = [
 ];
 
 var frand_unit_circle = function(){
-	var v = new Vect(Math.random()*2 - 1, Math.random()*2 - 1);
+	var v = new Vect(mersenne.rand_real()*2 - 1, mersenne.rand_real()*2 - 1);
 	return (vlengthsq(v) < 1 ? v : frand_unit_circle());
 };
 
@@ -101,7 +101,7 @@ add_benchmark('SimpleTerrainHexagons 100', init_SimpleTerrain(100, function(i) {
 
 // SimpleTerrain variable sized objects
 var rand_size = function(){
-	return Math.pow(1.5, lerp(-1.5, 3.5, Math.random()));
+	return Math.pow(1.5, lerp(-1.5, 3.5, mersenne.rand_real()));
 };
 
 add_benchmark('SimpleTerrainVCircles 200', function(){
@@ -368,19 +368,56 @@ add_benchmark('NoCollide', function(){
 // Memory usage? (too small to matter?)
 // http://forums.tigsource.com/index.php?topic=18077.msg518578#msg518578
 
-var num = 200;
-console.log("Running " + num + " steps of each simulation.");
+var SEED = 123124;
 
-for(var i = 0; i < bench_list.length; i++){
-	var bench = bench_list[i];
-
-	console.log(bench.name);
+var run_bench = function(bench, num) {
+	mersenne.seed(SEED);
 	bench.init();
 
-	console.time(bench.name);
+	var start = Date.now();
 	for (var s = 0; s < num; s++) {
 		space.step(1/60);
 	}
-	console.timeEnd(bench.name);
-}
+	var end = Date.now();
+	return end - start;
+};
 
+var bench = function(){
+	var NUM = 200;
+	console.log("Running " + NUM + " steps of each simulation with a seed of " + SEED);
+
+	for(var i = 0; i < bench_list.length; i++){
+		var bench = bench_list[i];
+
+		console.warn(bench.name);
+
+		sample = new Array(5);
+		for(var run = 0; run < 5; run++) {
+			sample[run] = run_bench(bench, NUM);
+			console.warn("Run " + (run+1) + ": " + sample[run])
+		}
+
+		sample.sort();
+		bench.time = (sample[1] + sample[2] + sample[3]) / 3;
+
+		console.warn(bench.name + " in " + bench.time + " ms");
+		console.warn();
+	}
+
+	for(var i = 0; i < bench_list.length; i++){
+		var bench = bench_list[i];
+		console.log(bench.time);
+	}
+};
+
+var profile = function(){
+	run_bench(bench_list[0], 50);
+};
+
+profile();
+console.log('vects: ' + numVects);
+console.log('contacts: ' + numContacts);
+console.log('node: ' + numNodes);
+console.log('leaf: ' + numLeaves);
+console.log('bb: ' + numBB);
+//bench();

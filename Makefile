@@ -32,7 +32,7 @@ cp.js: $(jsfiles) cpConstraints.js
 cpConstraints.js: $(constraintfiles)
 	cat $+ > $@
 
-bench.js: $(jsfiles) cpConstraints.js benchmark/bench.js
+bench.js: $(jsfiles) cpConstraints.js benchmark/mersenne.js benchmark/bench.js
 	cat $+ > $@
 
 clean:
