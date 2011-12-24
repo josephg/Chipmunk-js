@@ -435,7 +435,7 @@ for(trace in traces) {
 tracesArr.sort(function(a, b){
 	return traces[b] - traces[a];
 });
-for(var i = 0; i < Math.min(10, tracesArr.length); i++){
+for(var i = 0; i < min(10, tracesArr.length); i++){
 	var t = tracesArr[i];
 	console.log(traces[t] + ': ' + t);
 }

@@ -60,11 +60,11 @@ function MersenneTwister19937()
 	//c//#define MATRIX_A 0x9908b0dfUL   /* constant vector a */
 	//c//#define UPPER_MASK 0x80000000UL /* most significant w-r bits */
 	//c//#define LOWER_MASK 0x7fffffffUL /* least significant r bits */
-	N = 624;
-	M = 397;
-	MATRIX_A = 0x9908b0df;   /* constant vector a */
-	UPPER_MASK = 0x80000000; /* most significant w-r bits */
-	LOWER_MASK = 0x7fffffff; /* least significant r bits */
+	var N = 624;
+	var M = 397;
+	var MATRIX_A = 0x9908b0df;   /* constant vector a */
+	var UPPER_MASK = 0x80000000; /* most significant w-r bits */
+	var LOWER_MASK = 0x7fffffff; /* least significant r bits */
 	//c//static unsigned long mt[N]; /* the array for the state vector  */
 	//c//static int mti=N+1; /* mti==N+1 means mt[N] is not initialized */
 	var mt = new Array(N);   /* the array for the state vector  */
@@ -253,7 +253,7 @@ function MersenneTwister19937()
 }
 
 //  Exports: Public API
-mersenne = {};
+var mersenne = {};
 
 //  Export the twister class
 mersenne.MersenneTwister19937 = MersenneTwister19937;

@@ -67,6 +67,28 @@ var Contact = function(p, n, dist, hash)
 	numContacts++;
 };
 
+var mymin = function(a, b)
+{
+	return a < b ? a : b;
+};
+var mymax = function(a, b)
+{
+	return a > b ? a : b;
+};
+
+var min, max;
+if (typeof window === 'object' && window.navigator.userAgent.indexOf('Firefox') > -1){
+	// On firefox, Math.min and Math.max are really fast:
+	// http://jsperf.com/math-vs-greater-than/8
+ 	min = Math.min;
+	max = Math.max;
+} else {
+	// On chrome and safari, Math.min / max are slooow. The ternery operator above is faster
+	// than the builtins because we only have to deal with 2 arguments that are always numbers.
+	min = mymin;
+	max = mymax;
+}
+
 var deleteObjFromList = function(arr, obj)
 {
 	for(var i=0; i<arr.length; i++){
@@ -171,15 +193,15 @@ var momentForBox2 = exports.momentForBox2 = function(m, box)
 };
 
 /// Clamp @c f to be between @c min and @c max.
-var clamp = function(f, min, max)
+var clamp = function(f, minv, maxv)
 {
-	return Math.min(Math.max(f, min), max);
+	return min(max(f, minv), maxv);
 };
 
 /// Clamp @c f to be between 0 and 1.
 var clamp01 = function(f)
 {
-	return Math.max(0, Math.min(f, 1));
+	return max(0, min(f, 1));
 };
 
 /// Linearly interpolate (or extrapolate) between @c f1 and @c f2 by @c t percent.
@@ -442,7 +464,7 @@ var vslerp = exports.v.slerp = function(v1, v2, t)
 var vslerpconst = exports.v.slerpconst = function(v1, v2, a)
 {
 	var angle = Math.acos(vdot(v1, v2));
-	return vslerp(v1, v2, Math.min(a, angle)/angle);
+	return vslerp(v1, v2, min(a, angle)/angle);
 };
 
 /// Returns the unit length vector for the given angle (in radians).
@@ -530,20 +552,20 @@ var bbContainsVect = function(bb, v)
 /// Returns a bounding box that holds both bounding boxes.
 var bbMerge = function(a, b){
 	return new BB(
-			Math.min(a.l, b.l),
-			Math.min(a.b, b.b),
-			Math.max(a.r, b.r),
-			Math.max(a.t, b.t)
+			min(a.l, b.l),
+			min(a.b, b.b),
+			max(a.r, b.r),
+			max(a.t, b.t)
 		);
 };
 
 /// Returns a bounding box that holds both @c bb and @c v.
 var bbExpand = function(bb, v){
 	return new BB(
-			Math.min(bb.l, v.x),
-			Math.min(bb.b, v.y),
-			Math.max(bb.r, v.x),
-			Math.max(bb.t, v.y)
+			min(bb.l, v.x),
+			min(bb.b, v.y),
+			max(bb.r, v.x),
+			max(bb.t, v.y)
 		);
 };
 
@@ -556,7 +578,7 @@ var bbArea = function(bb)
 /// Merges @c a and @c b and returns the area of the merged bounding box.
 var bbMergedArea = function(a, b)
 {
-	return (Math.max(a.r, b.r) - Math.min(a.l, b.l))*(Math.max(a.t, b.t) - Math.min(a.b, b.b));
+	return (max(a.r, b.r) - min(a.l, b.l))*(max(a.t, b.t) - min(a.b, b.b));
 };
 
 /// Returns the fraction along the segment query the cpBB is hit. Returns Infinity if it doesn't hit.
@@ -565,20 +587,20 @@ var bbSegmentQuery = function(bb, a, b)
 	var idx = 1/(b.x - a.x);
 	var tx1 = (bb.l == a.x ? -Infinity : (bb.l - a.x)*idx);
 	var tx2 = (bb.r == a.x ?	Infinity : (bb.r - a.x)*idx);
-	var txmin = Math.min(tx1, tx2);
-	var txmax = Math.max(tx1, tx2);
+	var txmin = min(tx1, tx2);
+	var txmax = max(tx1, tx2);
 	
 	var idy = 1/(b.y - a.y);
 	var ty1 = (bb.b == a.y ? -Infinity : (bb.b - a.y)*idy);
 	var ty2 = (bb.t == a.y ?	Infinity : (bb.t - a.y)*idy);
-	var tymin = Math.min(ty1, ty2);
-	var tymax = Math.max(ty1, ty2);
+	var tymin = min(ty1, ty2);
+	var tymax = max(ty1, ty2);
 	
 	if(tymin <= txmax && txmin <= tymax){
-		var min = Math.max(txmin, tymin);
-		var max = Math.min(txmax, tymax);
+		var min = max(txmin, tymin);
+		var max = min(txmax, tymax);
 		
-		if(0.0 <= max && min <= 1.0) return Math.max(min, 0.0);
+		if(0.0 <= max && min <= 1.0) return max(min, 0.0);
 	}
 	
 	return Infinity;
@@ -593,8 +615,8 @@ var bbIntersectsSegment = function(bb, a, b)
 /// Clamp a vector to a bounding box.
 var bbClampVect = function(bb, v)
 {
-	var x = Math.min(Math.max(bb.l, v.x), bb.r);
-	var y = Math.min(Math.max(bb.b, v.y), bb.t);
+	var x = min(max(bb.l, v.x), bb.r);
+	var y = min(max(bb.b, v.y), bb.t);
 	return new Vect(x, y);
 };
 
@@ -1093,10 +1115,10 @@ PolyShape.prototype.transformVerts = function(p, rot)
 		var v = vadd(p, vrotate(src[i], rot));
 		
 		dst[i] = v;
-		l = Math.min(l, v.x);
-		r = Math.max(r, v.x);
-		b = Math.min(b, v.y);
-		t = Math.max(t, v.y);
+		l = min(l, v.x);
+		r = max(r, v.x);
+		b = min(b, v.y);
+		t = max(t, v.y);
 	}
 	
 	return this.bb = new BB(l, b, r, t);
@@ -1185,13 +1207,13 @@ PolyShape.prototype.getVert = function(idx)
 PolyShape.prototype.valueOnAxis = function(n, d)
 {
 	var verts = this.tVerts;
-	var min = vdot(n, verts[0]);
+	var m = vdot(n, verts[0]);
 	
 	for(var i=1; i<verts.length; i++){
-		min = Math.min(min, vdot(n, verts[i]));
+		m = min(m, vdot(n, verts[i]));
 	}
 	
-	return min - d;
+	return m - d;
 };
 
 PolyShape.prototype.containsVert = function(v)
@@ -1748,10 +1770,10 @@ BBTree.prototype.getBB = function(obj)
 		
 		var v = vmult(velocityFunc(obj), 0.1);
 		return bbNew(
-				bb.l + Math.min(-x, v.x),
-				bb.b + Math.min(-y, v.y),
-				bb.r + Math.max(x, v.x),
-				bb.t + Math.max(y, v.y)
+				bb.l + min(-x, v.x),
+				bb.b + min(-y, v.y),
+				bb.r + max(x, v.x),
+				bb.t + max(y, v.y)
 			);
 	} else {
 		return bb;
@@ -1980,11 +2002,11 @@ var subtreeSegmentQuery = function(subtree, a, b, t_exit, func)
 		var t_b = bbSegmentQuery(subtree.B.bb, a, b);
 		
 		if(t_a < t_b){
-			if(t_a < t_exit) t_exit = Math.min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func, data));
-			if(t_b < t_exit) t_exit = Math.min(t_exit, subtreeSegmentQuery(subtree.B, a, b, t_exit, func, data));
+			if(t_a < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func, data));
+			if(t_b < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.B, a, b, t_exit, func, data));
 		} else {
-			if(t_b < t_exit) t_exit = Math.min(t_exit, subtreeSegmentQuery(subtree.B, a, b, t_exit, func, data));
-			if(t_a < t_exit) t_exit = Math.min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func, data));
+			if(t_b < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.B, a, b, t_exit, func, data));
+			if(t_a < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func, data));
 		}
 		
 		return t_exit;
@@ -2360,7 +2382,7 @@ NodeRender(Node *node, int depth)
 	
 //	GLfloat v = depth/2.0f;	
 //	glColor3f(1.0f - v, v, 0.0f);
-	glLineWidth(Math.max(5.0f - depth, 1.0f));
+	glLineWidth(max(5.0f - depth, 1.0f));
 	glBegin(GL_LINES); {
 		glVertex2f(bb.l, bb.b);
 		glVertex2f(bb.l, bb.t);
@@ -2706,7 +2728,7 @@ Arbiter.prototype.preStep = function(dt, slop, bias)
 		con.tMass = 1/k_scalar(a, b, con.r1, con.r2, vperp(con.n));
 	
 		// Calculate the target bias velocity.
-		con.bias = -bias*Math.min(0, con.dist + slop)/dt;
+		con.bias = -bias*min(0, con.dist + slop)/dt;
 		con.jBias = 0;
 		
 		// Calculate the target bounce velocity.
@@ -2769,11 +2791,11 @@ Arbiter.prototype.applyImpulse = function()
 		
 		var jbn = (con.bias - vbn)*nMass;
 		var jbnOld = con.jBias;
-		con.jBias = Math.max(jbnOld + jbn, 0);
+		con.jBias = max(jbnOld + jbn, 0);
 		
 		var jn = -(con.bounce + vrn)*nMass;
 		var jnOld = con.jnAcc;
-		con.jnAcc = Math.max(jnOld + jn, 0);
+		con.jnAcc = max(jnOld + jn, 0);
 		
 		var jtMax = friction*con.jnAcc;
 		var jt = -vrt*con.tMass;
@@ -2980,7 +3002,7 @@ var segValueOnAxis = function(seg, n, d)
 {
 	var a = vdot(n, seg.ta) - seg.r;
 	var b = vdot(n, seg.tb) - seg.r;
-	return Math.min(a, b) - d;
+	return min(a, b) - d;
 };
 
 // Identify vertexes that have penetrated the segment.
