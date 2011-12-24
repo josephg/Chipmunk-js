@@ -220,11 +220,16 @@ var lerpconst = function(f1, f2, d)
 
 var numVects = 0;
 
+var traces = {};
+
 var Vect = exports.Vect = function(x, y)
 {
 	this.x = x;
 	this.y = y;
-	numVects++;
+//	numVects++;
+
+//	var s = new Error().stack;
+//	traces[s] = traces[s] ? traces[s]+1 : 1;
 };
 
 exports.v = {};
@@ -239,6 +244,11 @@ var vzero = new Vect(0,0);
 var vdot = exports.v.dot = function(v1, v2)
 {
 	return v1.x*v2.x + v1.y*v2.y;
+};
+
+var vdot2 = function(x1, y1, x2, y2)
+{
+	return x1*x2 + y1*y2;
 };
 
 /// Returns the length of v.
@@ -311,6 +321,11 @@ Vect.prototype.mult = function(s)
 var vcross = exports.v.cross = function(v1, v2)
 {
 	return v1.x*v2.y - v1.y*v2.x;
+};
+
+var vcross2 = function(x1, y1, x2, y2)
+{
+	return x1*y2 - y1*x2;
 };
 
 /// Returns a perpendicular vector. (90 degree rotation)
@@ -481,7 +496,7 @@ var BB = function(l, b, r, t)
 	this.r = r;
 	this.t = t;
 
-	numBB++;
+//	numBB++;
 }
 
 var bbNewForCircle = function(p, r)
@@ -1256,11 +1271,11 @@ var Body = exports.Body = function(m, i) {
 	//this.i_inv;
 
 	/// Position of the rigid body's center of gravity.
-	this.p = vzero;
+	this.p = new Vect(0,0);
 	/// Velocity of the rigid body's center of gravity.
-	this.v = vzero;
+	this.v = new Vect(0,0);
 	/// Force acting on the rigid body's center of gravity.
-	this.f = vzero;
+	this.f = new Vect(0,0);
 	
 	/// Rotation of the body around it's center of gravity in radians.
 	/// Must agree with cpBody.rot! Use cpBodySetAngle() when changing the angle for this reason.
@@ -1280,7 +1295,7 @@ var Body = exports.Body = function(m, i) {
 	this.w_limit = Infinity;
 	
 	// This stuff is all private.
-	this.v_bias = vzero;
+	this.v_bias = new Vect(0,0);
 	this.w_bias = 0;
 	
 	this.space = null;
@@ -1448,7 +1463,7 @@ Body.prototype.updatePosition = function(dt)
 	this.p = vadd(this.p, vmult(vadd(this.v, this.v_bias), dt));
 	this.setAngleInternal(this.a + (this.w + this.w_bias)*dt);
 	
-	this.v_bias = vzero;
+	this.v_bias = new Vect(0,0);
 	this.w_bias = 0;
 	
 	this.sanityCheck();
@@ -1457,7 +1472,7 @@ Body.prototype.updatePosition = function(dt)
 Body.prototype.resetForces = function()
 {
 	this.activate();
-	this.f = vzero;
+	this.f = new Vect(0,0);
 	this.t = 0;
 };
 
@@ -1471,7 +1486,7 @@ Body.prototype.applyForce = function(force, r)
 Body.prototype.applyImpulse = function(j, r)
 {
 	this.activate();
-	apply_impulse(this, j, r);
+	apply_impulse(this, j.x, j.y, r);
 };
 
 Body.prototype.getVelAtPoint = function(r)
@@ -2708,8 +2723,13 @@ Arbiter.prototype.applyCachedImpulse = function(dt_coef)
 	
 	for(var i=0; i<this.contacts.length; i++){
 		var con = this.contacts[i];
-		var j = vrotate(con.n, new Vect(con.jnAcc, con.jtAcc));
-		apply_impulses(a, b, con.r1, con.r2, vmult(j, dt_coef));
+		//var j = vrotate(con.n, new Vect(con.jnAcc, con.jtAcc));
+		var nx = con.n.x;
+		var ny = con.n.y;
+		var jx = nx*con.jnAcc - ny*con.jtAcc;
+		var jy = nx*con.jtAcc + ny*con.jnAcc;
+		//apply_impulses(a, b, con.r1, con.r2, vmult(j, dt_coef));
+		apply_impulses(a, b, con.r1, con.r2, jx * dt_coef, jy * dt_coef);
 	}
 };
 
@@ -2729,16 +2749,23 @@ Arbiter.prototype.applyImpulse = function()
 		var r1 = con.r1;
 		var r2 = con.r2;
 		
-		var vr = relative_velocity(a, b, r1, r2);
-		//var vb1 = vadd(vmult(vperp(r1), a.w_bias), a.v_bias);
-		var vb1 = vperp(r1).mult(a.w_bias).add(a.v_bias);
-		//var vb2 = vadd(vmult(vperp(r2), b.w_bias), b.v_bias);
-		var vb2 = vperp(r2).mult(b.w_bias).add(b.v_bias);
+		//var vr = relative_velocity(a, b, r1, r2);
+		var vrx = b.v.x - r2.y * b.w - (a.v.x - r1.y * a.w);
+		var vry = b.v.y + r2.x * b.w - (a.v.y + r1.x * a.w);
 		
-		var vbn = vdot(vsub(vb2, vb1), n);
-		var vrn = vdot(vr, n);
-		var vrt = vdot(vr.add(surface_vr), vperp(n));
-		// vr no longer valid.
+		//var vb1 = vadd(vmult(vperp(r1), a.w_bias), a.v_bias);
+		var vb1x = (-r1.y) * a.w_bias + a.v_bias.x;
+		var vb1y = ( r1.x) * a.w_bias + a.v_bias.y;
+
+		//var vb2 = vadd(vmult(vperp(r2), b.w_bias), b.v_bias);
+		var vb2x = (-r2.y) * b.w_bias + b.v_bias.x;
+		var vb2y = ( r2.x) * b.w_bias + b.v_bias.y;
+		
+		//var vbn = vdot(vsub(vb2, vb1), n);
+		var vbn = vdot2(vb2x-vb1x, vb2y-vb1y, n.x, n.y);
+		var vrn = vdot2(vrx, vry, n.x, n.y);
+		//var vrt = vdot(vadd(vr, surface_vr), vperp(n));
+		var vrt = vdot2(vrx + surface_vr.x, vry + surface_vr.y, -n.y, n.x);
 		
 		var jbn = (con.bias - vbn)*nMass;
 		var jbnOld = con.jBias;
@@ -2753,8 +2780,17 @@ Arbiter.prototype.applyImpulse = function()
 		var jtOld = con.jtAcc;
 		con.jtAcc = clamp(jtOld + jt, -jtMax, jtMax);
 		
-		apply_bias_impulses(a, b, r1, r2, vmult(n, con.jBias - jbnOld));
-		apply_impulses(a, b, r1, r2, vrotate(n, new Vect(con.jnAcc - jnOld, con.jtAcc - jtOld)));
+		//apply_bias_impulses(a, b, r1, r2, vmult(n, con.jBias - jbnOld));
+		var bias_x = n.x * (con.jBias - jbnOld);
+		var bias_y = n.y * (con.jBias - jbnOld);
+		apply_bias_impulse(a, -bias_x, -bias_y, r1);
+		apply_bias_impulse(b, bias_x, bias_y, r2);
+
+		//apply_impulses(a, b, r1, r2, vrotate(n, new Vect(con.jnAcc - jnOld, con.jtAcc - jtOld)));
+		var rot_x = con.jnAcc - jnOld;
+		var rot_y = con.jtAcc - jtOld;
+		apply_impulses(a, b, r1, r2, n.x*rot_x - n.y*rot_y, n.x*rot_y + n.y*rot_x);
+
 	}
 };
 
@@ -4330,6 +4366,8 @@ Space.prototype.step = function(dt)
 {
 	// don't step if the timestep is 0!
 	if(dt === 0) return;
+
+	assert(vzero.x === 0 && vzero.y === 0, "vzero is invalid");
 	
 	this.stamp++;
 	
@@ -4476,6 +4514,7 @@ var normal_relative_velocity = function(a, b, r1, r2, n){
 	return vdot(relative_velocity(a, b, r1, r2), n);
 };
 
+/*
 var apply_impulse = function(body, j, r){
 	body.v = vadd(body.v, vmult(j, body.m_inv));
 	body.w += body.i_inv*vcross(r, j);
@@ -4486,18 +4525,36 @@ var apply_impulses = function(a, b, r1, r2, j)
 	apply_impulse(a, vneg(j), r1);
 	apply_impulse(b, j, r2);
 };
+*/
 
-var apply_bias_impulse = function(body, j, r)
-{
-	body.v_bias = vadd(body.v_bias, vmult(j, body.m_inv));
-	body.w_bias += body.i_inv*vcross(r, j);
+var apply_impulse = function(body, jx, jy, r){
+//	body.v = body.v.add(vmult(j, body.m_inv));
+	body.v.x += jx * body.m_inv;
+	body.v.y += jy * body.m_inv;
+//	body.w += body.i_inv*vcross(r, j);
+	body.w += body.i_inv*(r.x*jy - r.y*jx);
 };
 
+var apply_impulses = function(a, b, r1, r2, jx, jy)
+{
+	apply_impulse(a, -jx, -jy, r1);
+	apply_impulse(b, jx, jy, r2);
+};
+
+var apply_bias_impulse = function(body, jx, jy, r)
+{
+	//body.v_bias = vadd(body.v_bias, vmult(j, body.m_inv));
+	body.v_bias.x += jx * body.m_inv;
+	body.v_bias.y += jy * body.m_inv;
+	body.w_bias += body.i_inv*vcross2(r.x, r.y, jx, jy);
+};
+
+/*
 var apply_bias_impulses = function(a, b, r1, r2, j)
 {
 	apply_bias_impulse(a, vneg(j), r1);
 	apply_bias_impulse(b, j, r2);
-};
+};*/
 
 var k_scalar_body = function(body, r, n)
 {

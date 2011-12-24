@@ -414,10 +414,28 @@ var profile = function(){
 	run_bench(bench_list[0], 50);
 };
 
-profile();
+bench();
+//profile();
 console.log('vects: ' + numVects);
 console.log('contacts: ' + numContacts);
 console.log('node: ' + numNodes);
 console.log('leaf: ' + numLeaves);
 console.log('bb: ' + numBB);
-//bench();
+
+console.log(numVects);
+console.log(numContacts);
+console.log(numNodes);
+console.log(numLeaves);
+console.log(numBB);
+
+var tracesArr = [];
+for(trace in traces) {
+	tracesArr.push(trace);
+}
+tracesArr.sort(function(a, b){
+	return traces[b] - traces[a];
+});
+for(var i = 0; i < Math.min(10, tracesArr.length); i++){
+	var t = tracesArr[i];
+	console.log(traces[t] + ': ' + t);
+}
