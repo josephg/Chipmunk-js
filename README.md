@@ -19,15 +19,15 @@ The API for Chipmunk-js is almost identical to chipmunk-physics. Except:
 - Most functions are wrapped by their containing objects
 - Some functions took an array-and-length. Arrays are now all simply javascript arrays, and the length argument has been removed. Eg:
 
-  ```c
+    ```c
 cpMomentForPoly(mass, numVerts, *verts, offset);
-  ```
+    ```
 
-  is now simply:
+    is now simply:
 
-  ```javascript
+    ```javascript
 momentForPoly(mass, verts, offset);
-  ```
+    ```
 
 ## Example
 
@@ -36,29 +36,29 @@ This code creates a new space, sets 10 physics iterations per update (these incr
 In C, this code looked like:
 
 ```C
-	space = cpSpaceNew();
-	space->iterations = 10;
-	
-	cpVect offset = cpv(-320, -240);
-	for(int i=0; i<(bouncy_terrain_count - 1); i++){
-		cpVect a = bouncy_terrain_verts[i], b = bouncy_terrain_verts[i+1];
-		cpShape *shape = cpSpaceAddShape(space, cpSegmentShapeNew(space->staticBody, cpvadd(a, offset), cpvadd(b, offset), 0.0f));
+  space = cpSpaceNew();
+  space->iterations = 10;
+  
+  cpVect offset = cpv(-320, -240);
+  for(int i=0; i<(bouncy_terrain_count - 1); i++){
+    cpVect a = bouncy_terrain_verts[i], b = bouncy_terrain_verts[i+1];
+    cpShape *shape = cpSpaceAddShape(space, cpSegmentShapeNew(space->staticBody, cpvadd(a, offset), cpvadd(b, offset), 0.0f));
     cpShapeSetElasticity(shape, 1.0f);
-	}
+  }
 ```
 
 In javascript, the equivalent code is:
 
 ```javascript
-	space = new cp.Space();
-	space.iterations = 10;
-	
-	var offset = new cp.Vect(-320, -240);
-	for(var i=0; i<(bouncy_terrain_verts.length - 1); i++){
-		var a = bouncy_terrain_verts[i], b = bouncy_terrain_verts[i+1];
-		var shape = space.addShape(new cp.SegmentShape(space.staticBody, cp.vadd(a, offset), cp.vadd(b, offset), 0));
-		shape.setElasticity(1);
-	}
+  space = new cp.Space();
+  space.iterations = 10;
+  
+  var offset = new cp.Vect(-320, -240);
+  for(var i=0; i<(bouncy_terrain_verts.length - 1); i++){
+    var a = bouncy_terrain_verts[i], b = bouncy_terrain_verts[i+1];
+    var shape = space.addShape(new cp.SegmentShape(space.staticBody, cp.vadd(a, offset), cp.vadd(b, offset), 0));
+    shape.setElasticity(1);
+  }
 ```
 
 # License
