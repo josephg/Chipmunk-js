@@ -1,4 +1,6 @@
-.PHONY: clean
+.PHONY: clean, all
+
+all: cp.min.js bench.js demos.js
 
 cp.min.js: cp.js
 	uglifyjs $+ > $@
@@ -22,9 +24,14 @@ constraints = \
 		util.js \
 		cpConstraint.js
 
+demos = demo.js \
+		ball.js \
+		PyramidStack.js \
+		PyramidTopple.js
 
 jsfiles = $(addprefix lib/, $(js))
 constraintfiles = $(addprefix lib/constraints/, $(constraints))
+demofiles = $(addprefix demo/, $(demos))
 
 cp.js: $(jsfiles) cpConstraints.js
 	echo '(function(){' > $@
@@ -37,5 +44,8 @@ cpConstraints.js: $(constraintfiles)
 bench.js: $(jsfiles) cpConstraints.js benchmark/mersenne.js benchmark/bench.js
 	cat $+ > $@
 
+demos.js: $(demofiles)
+	cat $+ > $@
+
 clean:
-	rm -f cp.js cp.min.js cpConstraints.js bench.js
+	rm -f cp.js cp.min.js cpConstraints.js bench.js demos.js
