@@ -1326,7 +1326,7 @@ var Body = exports.Body = function(m, i) {
 	/// Position of the rigid body's center of gravity.
 	this.p = new Vect(0,0);
 	/// Velocity of the rigid body's center of gravity.
-	this.v = new Vect(0,0);
+	this.vx = this.vy = 0;
 	/// Force acting on the rigid body's center of gravity.
 	this.f = new Vect(0,0);
 	
@@ -1393,8 +1393,9 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
 		assert(this.i === this.i && this.i_inv === this.i_inv, "Body's moment is invalid.");
 		
 		v_assert_sane(this.p, "Body's position is invalid.");
-		v_assert_sane(this.v, "Body's velocity is invalid.");
 		v_assert_sane(this.f, "Body's force is invalid.");
+		assert(this.vx === this.vx && Math.abs(this.vx) !== Infinity, "Body's velocity is invalid.");
+		assert(this.vy === this.vy && Math.abs(this.vy) !== Infinity, "Body's velocity is invalid.");
 
 		assert(this.a === this.a && Math.abs(this.a) !== Infinity, "Body's angle is invalid.");
 		assert(this.w === this.w && Math.abs(this.w) !== Infinity, "Body's angular velocity is invalid.");
@@ -1488,6 +1489,13 @@ Body.prototype.setPos = function(pos)
 	this.p = pos;
 };
 
+Body.prototype.setVelocity = function(velocity)
+{
+	this.activate();
+	this.vx = velocity.x;
+	this.vy = velocity.y;
+};
+
 Body.prototype.setAngleInternal = function(angle)
 {
 	assert(!isNaN(angle), "Internal Error: Attempting to set body's angle to NaN");
@@ -1508,9 +1516,16 @@ Body.prototype.setAngle = function(angle)
 Body.prototype.updateVelocity = function(gravity, damping, dt)
 {
 	//this.v = vclamp(vadd(vmult(this.v, damping), vmult(vadd(gravity, vmult(this.f, this.m_inv)), dt)), this.v_limit);
-	var vx = this.v.x * damping + (gravity.x + this.f.x * this.m_inv) * dt;
-	var vy = this.v.y * damping + (gravity.y + this.f.y * this.m_inv) * dt;
-	this.v = vclamp(new Vect(vx, vy), this.v_limit);
+	var vx = this.vx * damping + (gravity.x + this.f.x * this.m_inv) * dt;
+	var vy = this.vy * damping + (gravity.y + this.f.y * this.m_inv) * dt;
+
+	//var v = vclamp(new Vect(vx, vy), this.v_limit);
+	//this.vx = v.x; this.vy = v.y;
+	var v_limit = this.v_limit;
+	var lensq = vx * vx + vy * vy;
+	var scale = (lensq > v_limit*v_limit) ? v_limit / Math.sqrt(len) : 1;
+	this.vx = vx * scale;
+	this.vy = vy * scale;
 	
 	var w_limit = this.w_limit;
 	this.w = clamp(this.w*damping + this.t*this.i_inv*dt, -w_limit, w_limit);
@@ -1523,8 +1538,8 @@ Body.prototype.updatePosition = function(dt)
 	//this.p = vadd(this.p, vmult(vadd(this.v, this.v_bias), dt));
 	
 	//this.p = this.p + (this.v + this.v_bias) * dt;
-	this.p.x += (this.v.x + this.v_biasx) * dt;
-	this.p.y += (this.v.y + this.v_biasy) * dt;
+	this.p.x += (this.vx + this.v_biasx) * dt;
+	this.p.y += (this.vy + this.v_biasy) * dt;
 
 	this.setAngleInternal(this.a + (this.w + this.w_bias)*dt);
 	
@@ -1556,7 +1571,7 @@ Body.prototype.applyImpulse = function(j, r)
 
 Body.prototype.getVelAtPoint = function(r)
 {
-	return vadd(this.v, vmult(vperp(r), body.w));
+	return vadd(new Vect(this.vx, this.vy), vmult(vperp(r), body.w));
 };
 
 /// Get the velocity on a body (in world units) at a point on the body in world coordinates.
@@ -1617,10 +1632,11 @@ Body.prototype.world2Local = function(v)
 Body.prototype.kineticEnergy = function()
 {
 	// Need to do some fudging to avoid NaNs
-	var vsq = vdot(this.v, this.v);
+	var vsq = this.vx*this.vx + this.vy*this.vy;
 	var wsq = this.w * this.w;
 	return (vsq ? vsq*this.m : 0) + (wsq ? wsq*this.i : 0);
 };
+
 /* Copyright (c) 2010 Scott Lembcke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -2662,7 +2678,7 @@ Arbiter.prototype.totalImpulseWithFriction = function()
 	return this.swappedColl ? sum : sum.neg();
 };
 
-// Calculate the amount of energy lost in a collision not including dynamic friction.
+/// Calculate the amount of energy lost in a collision including static, but not dynamic friction.
 /// This function should only be called from a post-solve, post-step or cpBodyEachArbiter callback.
 Arbiter.prototype.totalKE = function()
 {
@@ -2903,8 +2919,8 @@ Arbiter.prototype.applyImpulse = function()
 		var r2 = con.r2;
 		
 		//var vr = relative_velocity(a, b, r1, r2);
-		var vrx = b.v.x - r2.y * b.w - (a.v.x - r1.y * a.w);
-		var vry = b.v.y + r2.x * b.w - (a.v.y + r1.x * a.w);
+		var vrx = b.vx - r2.y * b.w - (a.vx - r1.y * a.w);
+		var vry = b.vy + r2.x * b.w - (a.vy + r1.x * a.w);
 		
 		//var vb1 = vadd(vmult(vperp(r1), a.w_bias), a.v_bias);
 		var vb1x = (-r1.y) * a.w_bias + a.v_biasx;
@@ -3311,8 +3327,6 @@ var collideShapes = exports.collideShapes = function(a, b)
  * SOFTWARE.
  */
 
-var shapeVelocityFunc = function(shape){return shape.body.v;};
-
 var defaultCollisionHandler = new CollisionHandler();
 
 /// Basic Unit of Simulation in Chipmunk
@@ -3326,7 +3340,6 @@ var Space = exports.Space = function() {
 	
 	this.staticShapes = new BBTree(null);
 	this.activeShapes = new BBTree(this.staticShapes);
-	this.activeShapes.velocityfunc = shapeVelocityFunc;
 	
 	this.arbiters = [];
 	this.contactBuffersHead = null;
@@ -3465,7 +3478,6 @@ Space.prototype.addShape = function(shape)
 	var body = shape.body;
 	if(body.isStatic()) return this.addStaticShape(shape);
 	
-	// TODO change these to check if it was added to a space at all.
 	assert(!shape.space, "This shape is already added to a space and cannot be added to another.");
 	assertSpaceUnlocked(this);
 	
@@ -3652,7 +3664,6 @@ Space.prototype.eachBody = function(func)
 			func(bodies[i]);
 		}
 		
-		// TODO BUG not safe to activate sleeping bodies from here!
 		var components = this.sleepingComponents;
 		for(var i=0; i<components.length; i++){
 			var root = components[i];
@@ -4488,6 +4499,7 @@ Space.prototype.arbiterSetFilter = function(arb)
 	// TODO should make an arbiter state for this so it doesn't require filtering arbiters for
 	// dangling body pointers on body removal.
 	// Preserve arbiters on sensors and rejected arbiters for sleeping objects.
+	// This prevents errant separate callbacks from happenening.
 	if(
 		(a.isStatic() || a.isSleeping()) &&
 		(b.isStatic() || b.isSleeping())
@@ -4663,12 +4675,12 @@ Space.prototype.step = function(dt)
 // a and b are bodies.
 var relative_velocity = function(a, b, r1, r2){
 	//var v1_sum = vadd(a.v, vmult(vperp(r1), a.w));
-	var v1_sumx = a.v.x + (-r1.y) * a.w;
-	var v1_sumy = a.v.y + ( r1.x) * a.w;
+	var v1_sumx = a.vx + (-r1.y) * a.w;
+	var v1_sumy = a.vy + ( r1.x) * a.w;
 
 	//var v2_sum = vadd(b.v, vmult(vperp(r2), b.w));
-	var v2_sumx = b.v.x + (-r2.y) * b.w;
-	var v2_sumy = b.v.y + ( r2.x) * b.w;
+	var v2_sumx = b.vx + (-r2.y) * b.w;
+	var v2_sumy = b.vy + ( r2.x) * b.w;
 	
 //	return vsub(v2_sum, v1_sum);
 	return new Vect(v2_sumx - v1_sumx, v2_sumy - v1_sumy);
@@ -4676,10 +4688,10 @@ var relative_velocity = function(a, b, r1, r2){
 
 var normal_relative_velocity = function(a, b, r1, r2, n){
 	//return vdot(relative_velocity(a, b, r1, r2), n);
-	var v1_sumx = a.v.x + (-r1.y) * a.w;
-	var v1_sumy = a.v.y + ( r1.x) * a.w;
-	var v2_sumx = b.v.x + (-r2.y) * b.w;
-	var v2_sumy = b.v.y + ( r2.x) * b.w;
+	var v1_sumx = a.vx + (-r1.y) * a.w;
+	var v1_sumy = a.vy + ( r1.x) * a.w;
+	var v2_sumx = b.vx + (-r2.y) * b.w;
+	var v2_sumy = b.vy + ( r2.x) * b.w;
 
 	return vdot2(v2_sumx - v1_sumx, v2_sumy - v1_sumy, n.x, n.y);
 };
@@ -4699,8 +4711,8 @@ var apply_impulses = function(a, b, r1, r2, j)
 
 var apply_impulse = function(body, jx, jy, r){
 //	body.v = body.v.add(vmult(j, body.m_inv));
-	body.v.x += jx * body.m_inv;
-	body.v.y += jy * body.m_inv;
+	body.vx += jx * body.m_inv;
+	body.vy += jy * body.m_inv;
 //	body.w += body.i_inv*vcross(r, j);
 	body.w += body.i_inv*(r.x*jy - r.y*jx);
 };

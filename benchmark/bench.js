@@ -271,7 +271,7 @@ add_benchmark('BouncyTerrainCircles 500', function(){
 		var mass = radius*radius;
 		var body = space.addBody(new Body(mass, momentForCircle(mass, 0, radius, vzero)));
 		body.p = vadd(vmult(frand_unit_circle(), 130), vzero);
-		body.v = vmult(frand_unit_circle(), 50);
+		body.setVelocity(vmult(frand_unit_circle(), 50));
 		
 		var shape = space.addShape(new CircleShape(body, radius, vzero));
 		shape.e = 1;
@@ -302,7 +302,7 @@ add_benchmark('BouncyTerrainHexagons 500', function(){
 		var mass = radius*radius;
 		var body = space.addBody(new Body(mass, momentForPoly(mass, hexagon, vzero)));
 		body.p = vadd(vmult(frand_unit_circle(), 130), vzero);
-		body.v = vmult(frand_unit_circle(), 50);
+		body.setVelocity(vmult(frand_unit_circle(), 50));
 		
 		var shape = space.addShape(new PolyShape(body, hexagon, vzero));
 		shape.e = 1;
@@ -341,7 +341,7 @@ add_benchmark('NoCollide', function(){
 		var mass = 7;
 		var body = space.addBody(new Body(mass, momentForCircle(mass, 0, radius, vzero)));
 		body.p = v(-320, y);
-		body.v = v(100, 0);
+		body.setVelocity(v(100, 0));
 		
 		var shape = space.addShape(new CircleShape(body, radius, vzero));
 		shape.e = 1;
@@ -352,7 +352,7 @@ add_benchmark('NoCollide', function(){
 		var mass = 7;
 		var body = space.addBody(new Body(mass, momentForCircle(mass, 0, radius, vzero)));
 		body.p = v(x, -240);
-		body.v = v(0, 100); 
+		body.setVelocity(v(0, 100));
 		
 		var shape = space.addShape(new CircleShape(body, radius, vzero));
 		shape.e = 1;
@@ -362,6 +362,55 @@ add_benchmark('NoCollide', function(){
 	return space;
 });
 
+add_benchmark('PyramidTopple', function(){
+	var WIDTH = 4;
+	var HEIGHT = 30;
+
+	space = new Space();
+	
+	var add_domino = function(pos, flipped)
+	{
+		var mass = 1;
+		var moment = momentForBox(mass, WIDTH, HEIGHT);
+		
+		var body = space.addBody(new Body(mass, moment));
+		body.setPos(pos);
+
+		var shape = (flipped ? new BoxShape(body, HEIGHT, WIDTH) : new BoxShape(body, WIDTH, HEIGHT));
+		space.addShape(shape);
+		shape.setElasticity(0);
+		shape.setFriction(0.6);
+	};
+
+	space.iterations = 30;
+	space.gravity = v(0, -300);
+	space.sleepTimeThreshold = 0.5;
+	space.collisionSlop = 0.5;
+	
+	var floor = space.addShape(new SegmentShape(space.staticBody, v(0, 0), v(640, 0), 0));
+	floor.setElasticity(1);
+	floor.setFriction(1);
+	
+	// Add the dominoes.
+	var n = 12;
+	for(var i=0; i<n; i++){
+		for(var j=0; j<(n - i); j++){
+			var offset = v(320 + (j - (n - 1 - i)*0.5)*1.5*HEIGHT, (i + 0.5)*(HEIGHT + 2*WIDTH) - WIDTH);
+			add_domino(offset, false);
+			add_domino(vadd(offset, v(0, (HEIGHT + WIDTH)/2)), true);
+			
+			if(j === 0){
+				add_domino(vadd(offset, v(0.5*(WIDTH - HEIGHT), HEIGHT + WIDTH)), false);
+			}
+			
+			if(j != n - i - 1){
+				add_domino(vadd(offset, v(HEIGHT*0.75, (HEIGHT + 3*WIDTH)/2)), true);
+			} else {
+				add_domino(vadd(offset, v(0.5*(HEIGHT - WIDTH), HEIGHT + WIDTH)), false);
+			}
+		}
+	}
+});
 
 // TODO ideas:
 // addition/removal
@@ -422,15 +471,13 @@ var bench = function(){
 };
 
 var profile = function(){
-	for (var i = 0; i < 3; i++) {
-		//console.log(bench_list[i].name);
-		run_bench(bench_list[i], 50);
-	}
+	//run_bench(bench_list[bench_list.length - 1], 500);
+	run_bench(bench_list[0], 50);
 };
 
 //bench();
 profile();
-/*
+
 console.log('vects: ' + numVects);
 console.log('contacts: ' + numContacts);
 console.log('node: ' + numNodes);
@@ -442,7 +489,7 @@ console.log(numContacts);
 console.log(numNodes);
 console.log(numLeaves);
 console.log(numBB);
-*/
+
 var tracesArr = [];
 for(trace in traces) {
 	tracesArr.push(trace);
