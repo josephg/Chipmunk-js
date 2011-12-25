@@ -383,7 +383,7 @@ var run_bench = function(bench, num) {
 	mersenne.seed(SEED);
 	bench.init();
 
-	reset_stats();
+	//reset_stats();
 
 	var start = Date.now();
 	for (var s = 0; s < num; s++) {
@@ -422,11 +422,15 @@ var bench = function(){
 };
 
 var profile = function(){
-	run_bench(bench_list[1], 2);
+	for (var i = 0; i < 3; i++) {
+		//console.log(bench_list[i].name);
+		run_bench(bench_list[i], 50);
+	}
 };
 
 //bench();
 profile();
+/*
 console.log('vects: ' + numVects);
 console.log('contacts: ' + numContacts);
 console.log('node: ' + numNodes);
@@ -438,7 +442,7 @@ console.log(numContacts);
 console.log(numNodes);
 console.log(numLeaves);
 console.log(numBB);
-
+*/
 var tracesArr = [];
 for(trace in traces) {
 	tracesArr.push(trace);

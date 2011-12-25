@@ -29,8 +29,12 @@ Object.create = Object.create || function(o) {
 //var VERSION = CP_VERSION_MAJOR + "." + CP_VERSION_MINOR + "." + CP_VERSION_RELEASE;
 
 if(typeof exports === 'undefined'){
-	window.cp = exports = {};
+	var exports = {};
 }
+if(typeof window === 'object'){
+	window.cp = exports;
+}
+
 
 var assert = function(value, message)
 {
@@ -250,8 +254,8 @@ var Vect = exports.Vect = function(x, y)
 	this.y = y;
 	numVects++;
 
-	var s = new Error().stack;
-	traces[s] = traces[s] ? traces[s]+1 : 1;
+//	var s = new Error().stack;
+//	traces[s] = traces[s] ? traces[s]+1 : 1;
 };
 
 exports.v = {};
@@ -519,7 +523,7 @@ var BB = function(l, b, r, t)
 	this.t = t;
 
 	numBB++;
-}
+};
 
 var bbNewForCircle = function(p, r)
 {
@@ -536,6 +540,10 @@ var bbIntersects = function(a, b)
 {
 	return (a.l <= b.r && b.l <= a.r && a.b <= b.t && b.b <= a.t);
 };
+var bbIntersects2 = function(bb, l, b, r, t)
+{
+	return (bb.l <= r && l <= bb.r && bb.b <= t && b <= bb.t);
+};
 
 /// Returns true if @c other lies completely within @c bb.
 var bbContainsBB = function(bb, other)
@@ -547,6 +555,10 @@ var bbContainsBB = function(bb, other)
 var bbContainsVect = function(bb, v)
 {
 	return (bb.l <= v.x && bb.r >= v.x && bb.b <= v.y && bb.t >= v.y);
+};
+var bbContainsVect2 = function(l, b, r, t, v)
+{
+	return (l <= v.x && r >= v.x && b <= v.y && t >= v.y);
 };
 
 /// Returns a bounding box that holds both bounding boxes.
@@ -579,6 +591,11 @@ var bbArea = function(bb)
 var bbMergedArea = function(a, b)
 {
 	return (max(a.r, b.r) - min(a.l, b.l))*(max(a.t, b.t) - min(a.b, b.b));
+};
+
+var bbMergedArea2 = function(bb, l, b, r, t)
+{
+	return (max(bb.r, r) - min(bb.l, l))*(max(bb.t, t) - min(bb.b, b));
 };
 
 /// Returns the fraction along the segment query the cpBB is hit. Returns Infinity if it doesn't hit.
@@ -686,7 +703,7 @@ var Shape = exports.Shape = function(body) {
 	this.body = body;
 
 	/// The current bounding box of the shape.
-	this.bb = null;
+	this.bb_l = this.bb_b = this.bb_r = this.bb_t = 0;
 
 	this.hashid = shapeIDCounter++;
 
@@ -739,7 +756,7 @@ Shape.prototype.update = function(pos, rot)
 {
 	assert(!isNaN(rot.x), 'Rotation is NaN');
 	assert(!isNaN(pos.x), 'Position is NaN');
-	return (this.bb = this.cacheData(pos, rot));
+	this.cacheData(pos, rot);
 };
 
 /* Not implemented - all these getters and setters. Just edit the object directly.
@@ -794,7 +811,12 @@ CircleShape.prototype.cacheData = function(p, rot)
 {
 	//var c = this.tc = vadd(p, vrotate(this.c, rot));
 	var c = this.tc = vrotate(this.c, rot).add(p);
-	return bbNewForCircle(c, this.r);
+	//this.bb = bbNewForCircle(c, this.r);
+	var r = this.r;
+	this.bb_l = c.x - r;
+	this.bb_b = c.y - r;
+	this.bb_r = c.x + r;
+	this.bb_t = c.y + r;
 };
 
 /// Test if a point lies within a shape.
@@ -899,12 +921,16 @@ SegmentShape.prototype.cacheData = function(p, rot)
 	}
 	
 	var rad = this.r;
-	return new BB(l - rad, b - rad, r + rad, t + rad);
+
+	this.bb_l = l - rad;
+	this.bb_b = b - rad;
+	this.bb_r = r + rad;
+	this.bb_t = t + rad;
 };
 
 SegmentShape.prototype.pointQuery = function(p)
 {
-	if(!bbContainsVect(this.bb, p)) return;
+	if(!bbContainsVect2(this.bb_l, this.bb_b, this.bb_r, this.bb_t, p)) return;
 	
 	var a = this.ta;
 	var b = this.tb;
@@ -1122,7 +1148,10 @@ PolyShape.prototype.transformVerts = function(p, rot)
 		t = max(t, v.y);
 	}
 	
-	return this.bb = new BB(l, b, r, t);
+	this.bb_l = l;
+	this.bb_b = b;
+	this.bb_r = r;
+	this.bb_t = t;
 };
 
 PolyShape.prototype.transformAxes = function(p, rot)
@@ -1140,12 +1169,13 @@ PolyShape.prototype.transformAxes = function(p, rot)
 PolyShape.prototype.cacheData = function(p, rot)
 {
 	this.transformAxes(p, rot);
-	return this.transformVerts(p, rot);
+	this.transformVerts(p, rot);
 };
 
 PolyShape.prototype.pointQuery = function(p)
 {
-	if(!bbContainsVect(this.shape.bb, p)) return;
+//	if(!bbContainsVect(this.shape.bb, p)) return;
+	if(!bbContainsVect2(this.bb_l, this.bb_b, this.bb_r, this.bb_t, p)) return;
 	
 	var info = new PointQueryExtendedInfo(this);
 	
@@ -1671,9 +1701,8 @@ Body.prototype.kineticEnergy = function()
 	reindexQuery(func);
 */
 
-var SpatialIndex = exports.SpatialIndex = function(bbfunc, staticIndex)
+var SpatialIndex = exports.SpatialIndex = function(staticIndex)
 {
-	this.bbfunc = bbfunc;
 	this.staticIndex = staticIndex;
 	
 	if(staticIndex){
@@ -1686,11 +1715,10 @@ var SpatialIndex = exports.SpatialIndex = function(bbfunc, staticIndex)
 SpatialIndex.prototype.collideStatic = function(staticIndex, func)
 {
 	if(staticIndex.count > 0){
-		var bbfunc = this.bbfunc,
-			query = staticIndex.query;
+		var query = staticIndex.query;
 
 		this.each(function(obj) {
-			query(obj, bbfunc(obj), func);
+			query(obj, new BB(obj.bb_l, obj.bb_b, obj.bb_r, obj.bb_t), func);
 		});
 	}
 };
@@ -1719,9 +1747,9 @@ SpatialIndex.prototype.collideStatic = function(staticIndex, func)
 
 // This file implements a modified AABB tree for collision detection.
 
-var BBTree = exports.BBTree = function(bbfunc, staticIndex)
+var BBTree = exports.BBTree = function(staticIndex)
 {
-	SpatialIndex.call(this, bbfunc, staticIndex);
+	SpatialIndex.call(this, staticIndex);
 	
 	this.velocityFunc = null;
 
@@ -1747,7 +1775,11 @@ var Node = function(tree, a, b)
 {
 	//Node *node = NodeFromPool(tree);
 	this.obj = null;
-	this.bb = bbMerge(a.bb, b.bb);
+	//this.bb = bbMerge(a.bb, b.bb);
+	this.bb_l = min(a.bb_l, b.bb_l);
+	this.bb_b = min(a.bb_b, b.bb_b);
+	this.bb_r = max(a.bb_r, b.bb_r);
+	this.bb_t = max(a.bb_t, b.bb_t);
 	this.parent = null;
 	
 	this.setA(a);
@@ -1761,7 +1793,9 @@ var Leaf = function(tree, obj)
 	//Node *node = NodeFromPool(tree);
 
 	this.obj = obj;
-	this.bb = tree.getBB(obj);
+	//this.bb = tree.getBB(obj);
+	tree.getBB(obj, this);
+
 	this.parent = null;
 
 	this.stamp = 1;
@@ -1771,25 +1805,25 @@ var Leaf = function(tree, obj)
 
 // **** Misc Functions
 
-BBTree.prototype.getBB = function(obj)
+BBTree.prototype.getBB = function(obj, dest)
 {
-	var bb = this.bbfunc(obj);
-	
 	var velocityFunc = this.velocityFunc;
 	if(velocityFunc){
 		var coef = 0.1;
-		var x = (bb.r - bb.l)*coef;
-		var y = (bb.t - bb.b)*coef;
+		var x = (obj.bb_r - obj.bb_l)*coef;
+		var y = (obj.bb_t - obj.bb_b)*coef;
 		
 		var v = vmult(velocityFunc(obj), 0.1);
-		return bbNew(
-				bb.l + min(-x, v.x),
-				bb.b + min(-y, v.y),
-				bb.r + max(x, v.x),
-				bb.t + max(y, v.y)
-			);
+
+		dest.bb_l = obj.bb_l + min(-x, v.x);
+		dest.bb_b = obj.bb_b + min(-y, v.y);
+		dest.bb_r = obj.bb_r + max( x, v.x);
+		dest.bb_t = obj.bb_t + max( y, v.y);
 	} else {
-		return bb;
+		dest.bb_l = obj.bb_l;
+		dest.bb_b = obj.bb_b;
+		dest.bb_r = obj.bb_r;
+		dest.bb_t = obj.bb_t;
 	}
 };
 
@@ -1955,8 +1989,24 @@ Node.prototype.replaceChild = function(child, value, tree)
 	}
 	
 	for(var node=this; node; node = node.parent){
-		node.bb = bbMerge(node.A.bb, node.B.bb);
+		//node.bb = bbMerge(node.A.bb, node.B.bb);
+		var a = node.A;
+		var b = node.B;
+		node.bb_l = min(a.bb_l, b.bb_l);
+		node.bb_b = min(a.bb_b, b.bb_b);
+		node.bb_r = max(a.bb_r, b.bb_r);
+		node.bb_t = max(a.bb_t, b.bb_t);
 	}
+};
+
+Node.prototype.bbArea = Leaf.prototype.bbArea = function()
+{
+	return (this.bb_r - this.bb_l)*(this.bb_t - this.bb_b);
+};
+
+var bbTreeMergedArea = function(a, b)
+{
+	return (max(a.bb_r, b.bb_r) - min(a.bb_l, b.bb_l))*(max(a.bb_t, b.bb_t) - min(a.bb_b, b.bb_b));
 };
 
 // **** Subtree Functions
@@ -1965,7 +2015,7 @@ Node.prototype.replaceChild = function(child, value, tree)
 
 var bbProximity = function(a, b)
 {
-	return Math.abs(a.l + a.r - b.l - b.r) + Math.abs(a.b + b.t - b.b - b.t);
+	return Math.abs(a.bb_l + a.bb_r - b.bb_l - b.bb_r) + Math.abs(a.bb_b + b.bb_t - b.bb_b - b.bb_t);
 }
 
 var subtreeInsert = function(subtree, leaf, tree)
@@ -1975,12 +2025,12 @@ var subtreeInsert = function(subtree, leaf, tree)
 	} else if(subtree.isLeaf){
 		return new Node(tree, leaf, subtree);
 	} else {
-		var cost_a = bbArea(subtree.B.bb) + bbMergedArea(subtree.A.bb, leaf.bb);
-		var cost_b = bbArea(subtree.A.bb) + bbMergedArea(subtree.B.bb, leaf.bb);
+		var cost_a = subtree.B.bbArea() + bbTreeMergedArea(subtree.A, leaf);
+		var cost_b = subtree.A.bbArea() + bbTreeMergedArea(subtree.B, leaf);
 		
 		if(cost_a === cost_b){
-			cost_a = bbProximity(subtree.A.bb, leaf.bb);
-			cost_b = bbProximity(subtree.B.bb, leaf.bb);
+			cost_a = bbProximity(subtree.A, leaf);
+			cost_b = bbProximity(subtree.B, leaf);
 		}	
 
 		if(cost_b < cost_a){
@@ -1989,14 +2039,25 @@ var subtreeInsert = function(subtree, leaf, tree)
 			subtree.setA(subtreeInsert(subtree.A, leaf, tree));
 		}
 		
-		subtree.bb = bbMerge(subtree.bb, leaf.bb);
+//		subtree.bb = bbMerge(subtree.bb, leaf.bb);
+		subtree.bb_l = min(subtree.bb_l, leaf.bb_l);
+		subtree.bb_b = min(subtree.bb_b, leaf.bb_b);
+		subtree.bb_r = max(subtree.bb_r, leaf.bb_r);
+		subtree.bb_t = max(subtree.bb_t, leaf.bb_t);
+
 		return subtree;
 	}
 };
 
+Node.prototype.intersectsBB = Leaf.prototype.intersectsBB = function(node, bb)
+{
+	return (node.bb_l <= bb.r && bb.l <= node.bb_r && node.bb_b <= bb.t && bb.b <= node.bb_t);
+};
+
 var subtreeQuery = function(subtree, bb, func)
 {
-	if(bbIntersects(subtree.bb, bb)){
+	//if(bbIntersectsBB(subtree.bb, bb)){
+	if(subtree.intersectsBB(bb)){
 		if(subtree.isLeaf){
 			func(subtree.obj);
 		} else {
@@ -2006,13 +2067,38 @@ var subtreeQuery = function(subtree, bb, func)
 	}
 };
 
+/// Returns the fraction along the segment query the cpBB is hit. Returns Infinity if it doesn't hit.
+var bbTreeSegmentQuery = function(node, a, b)
+{
+	var idx = 1/(b.x - a.x);
+	var tx1 = (node.bb_l == a.x ? -Infinity : (node.bb_l - a.x)*idx);
+	var tx2 = (node.bb_r == a.x ?	Infinity : (node.bb_r - a.x)*idx);
+	var txmin = min(tx1, tx2);
+	var txmax = max(tx1, tx2);
+	
+	var idy = 1/(b.y - a.y);
+	var ty1 = (node.bb_b == a.y ? -Infinity : (node.bb_b - a.y)*idy);
+	var ty2 = (node.bb_t == a.y ?	Infinity : (node.bb_t - a.y)*idy);
+	var tymin = min(ty1, ty2);
+	var tymax = max(ty1, ty2);
+	
+	if(tymin <= txmax && txmin <= tymax){
+		var min = max(txmin, tymin);
+		var max = min(txmax, tymax);
+		
+		if(0.0 <= max && min <= 1.0) return max(min, 0.0);
+	}
+	
+	return Infinity;
+};
+
 var subtreeSegmentQuery = function(subtree, a, b, t_exit, func)
 {
 	if(subtree.isLeaf){
 		return func(subtree.obj);
 	} else {
-		var t_a = bbSegmentQuery(subtree.A.bb, a, b);
-		var t_b = bbSegmentQuery(subtree.B.bb, a, b);
+		var t_a = bbTreeSegmentQuery(subtree.A, a, b);
+		var t_b = bbTreeSegmentQuery(subtree.B, a, b);
 		
 		if(t_a < t_b){
 			if(t_a < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func, data));
@@ -2065,9 +2151,14 @@ typedef struct MarkContext {
 } MarkContext;
 */
 
+var bbTreeIntersectsNode = function(a, b)
+{
+	return (a.bb_l <= b.bb_r && b.bb_l <= a.bb_r && a.bb_b <= b.bb_t && b.bb_b <= a.bb_t);
+};
+
 var markLeafQuery = function(subtree, leaf, left, tree, func)
 {
-	if(bbIntersects(leaf.bb, subtree.bb)){
+	if(bbTreeIntersectsNode(leaf, subtree)){
 		if(subtree.isLeaf){
 			if(left){
 				pairInsert(leaf, subtree, tree);
@@ -2119,13 +2210,19 @@ var markSubtree = function(subtree, tree, staticRoot, func)
 
 // **** Leaf Functions
 
+Leaf.prototype.containsObj = function(obj)
+{
+	return (this.bb_l <= obj.bb_l && this.bb_r >= obj.bb_r && this.bb_b <= obj.bb_b && this.bb_t >= obj.bb_t);
+};
+
 Leaf.prototype.update = function(tree)
 {
 	var root = tree.root;
-	var bb = tree.bbfunc(this.obj);
-	
-	if(!bbContainsBB(this.bb, bb)){
-		this.bb = tree.getBB(this.obj);
+	var obj = this.obj;
+
+	//if(!bbContainsBB(this.bb, bb)){
+	if(!this.containsObj(obj)){
+		tree.getBB(this.obj, this);
 		
 		root = subtreeRemove(root, this, tree);
 		tree.root = subtreeInsert(root, this, tree);
@@ -2259,6 +2356,11 @@ BBTree.prototype.each = function(func)
 
 // **** Tree Optimization
 
+var bbTreeMergedArea2 = function(node, l, b, r, t)
+{
+	return (max(node.bb_r, r) - min(node.bb_l, l))*(max(node.bb_t, t) - min(node.bb_b, b));
+};
+
 var partitionNodes = function(tree, nodes, offset, count)
 {
 	if(count == 1){
@@ -2268,24 +2370,37 @@ var partitionNodes = function(tree, nodes, offset, count)
 	}
 	
 	// Find the AABB for these nodes
-	var bb = nodes[offset].bb;
+	//var bb = nodes[offset].bb;
+	var node = nodes[offset];
+	var bb_l = node.bb_l,
+		bb_b = node.bb_b,
+		bb_r = node.bb_r,
+		bb_t = node.bb_t;
+
 	var end = offset + count;
-	for(var i=offset + 1; i<end; i++) bb = bbMerge(bb, nodes[i].bb);
+	for(var i=offset + 1; i<end; i++){
+		//bb = bbMerge(bb, nodes[i].bb);
+		node = nodes[i];
+		bb_l = min(bb_l, node.bb_l);
+		bb_b = min(bb_b, node.bb_b);
+		bb_r = max(bb_r, node.bb_r);
+		bb_t = max(bb_t, node.bb_t);
+	}
 	
 	// Split it on it's longest axis
-	var splitWidth = (bb.r - bb.l > bb.t - bb.b);
+	var splitWidth = (bb_r - bb_l > bb_t - bb_b);
 	
 	// Sort the bounds and use the median as the splitting point
 	var bounds = new Array(count*2);
 	if(splitWidth){
 		for(var i=offset; i<end; i++){
-			bounds[2*i + 0] = nodes[i].bb.l;
-			bounds[2*i + 1] = nodes[i].bb.r;
+			bounds[2*i + 0] = nodes[i].bb_l;
+			bounds[2*i + 1] = nodes[i].bb_r;
 		}
 	} else {
 		for(var i=offset; i<end; i++){
-			bounds[2*i + 0] = nodes[i].bb.b;
-			bounds[2*i + 1] = nodes[i].bb.t;
+			bounds[2*i + 0] = nodes[i].bb_b;
+			bounds[2*i + 1] = nodes[i].bb_t;
 		}
 	}
 	
@@ -2296,15 +2411,18 @@ var partitionNodes = function(tree, nodes, offset, count)
 	var split = (bounds[count - 1] + bounds[count])*0.5; // use the median as the split
 
 	// Generate the child BBs
-	var a = bb, b = bb;
-	if(splitWidth) a.r = b.l = split; else a.t = b.b = split;
+	//var a = bb, b = bb;
+	var a_l = bb_l, a_b = bb_b, a_r = bb_r, a_t = bb_t;
+	var b_l = bb_l, b_b = bb_b, b_r = bb_r, b_t = bb_t;
+
+	if(splitWidth) a_r = b_l = split; else a_t = b_b = split;
 	
 	// Partition the nodes
 	var right = end;
 	for(var left=offset; left < right;){
 		var node = nodes[left];
-		if(bbMergedArea(node.bb, b) < bbMergedArea(node.bb, a)){
-//		if(bbProximity(node.bb, b) < bbProximity(node.bb, a)){
+//	if(bbMergedArea(node.bb, b) < bbMergedArea(node.bb, a)){
+		if(bbTreeMergedArea2(node, b_l, b_b, b_r, b_t) < bbTreeMergedArea2(node, a_l, a_b, a_r, a_t)){
 			right--;
 			nodes[left] = nodes[right];
 			nodes[right] = node;
@@ -2368,14 +2486,14 @@ var nodeRender = function(node, depth)
 		nodeRender(node.b, depth + 1);
 	}
 	
-	var bb = node.bb;
+//	var bb = node.bb;
 	
 	var str = '';
 	for(var i = 0; i < depth; i++) {
 		str += ' ';
 	}
 
-	console.log(str + bb.b + ' ' + bb.t);
+//	console.log(str + bb.b + ' ' + bb.t);
 };
 
 BBTree.prototype.log = function(){
@@ -3193,7 +3311,6 @@ var collideShapes = exports.collideShapes = function(a, b)
  * SOFTWARE.
  */
 
-var getShapeBB = function(shape){return shape.bb;};
 var shapeVelocityFunc = function(shape){return shape.body.v;};
 
 var defaultCollisionHandler = new CollisionHandler();
@@ -3207,8 +3324,8 @@ var Space = exports.Space = function() {
 	this.rousedBodies = [];
 	this.sleepingComponents = [];
 	
-	this.staticShapes = new BBTree(getShapeBB, null);
-	this.activeShapes = new BBTree(getShapeBB, this.staticShapes);
+	this.staticShapes = new BBTree(null);
+	this.activeShapes = new BBTree(this.staticShapes);
 	this.activeShapes.velocityfunc = shapeVelocityFunc;
 	
 	this.arbiters = [];
@@ -3611,8 +3728,8 @@ Space.prototype.useSpatialHash = function(dim, count)
 {
 	throw new Error('Spatial Hash not yet implemented!');
 	
-	var staticShapes = new SpaceHash(dim, count, getShapeBB, null);
-	var activeShapes = new SpaceHash(dim, count, getShapeBB, staticShapes);
+	var staticShapes = new SpaceHash(dim, count, null);
+	var activeShapes = new SpaceHash(dim, count, staticShapes);
 	
 	this.staticShapes.each(function(shape){
 		staticShapes.insert(shape, shape.hashid);
@@ -4061,7 +4178,7 @@ Space.prototype.bbQuery = function(bb, layers, group, func)
 	var helper = function(shape){
 		if(
 			!(shape.group && group === shape.group) && (layers & shape.layers) &&
-			bbIntersects(bb, shape.bb)
+			bbIntersects2(bb, shape.bb_l, shape.bb_b, shape.bb_r, shape.bb_t)
 		){
 			func(shape);
 		}
@@ -4077,7 +4194,12 @@ Space.prototype.bbQuery = function(bb, layers, group, func)
 Space.prototype.shapeQuery = function(shape, func)
 {
 	var body = shape.body;
-	var bb = (body ? shape.update(body.p, body.rot) : shape.bb);
+
+	//var bb = (body ? shape.update(body.p, body.rot) : shape.bb);
+	if(body){
+		shape.update(body.p, body.rot);
+	}
+	var bb = new BB(shape.bb_l, shape.bb_b, shape.bb_r, shape.bb_t);
 
 	//shapeQueryContext context = {func, data, false};
 	var anyCollision = false;
@@ -4288,7 +4410,8 @@ Space.prototype.makeCollideShapes = function()
 		// Reject any of the simple cases
 		if(
 			// BBoxes must overlap
-			!bbIntersects(a.bb, b.bb)
+			//!bbIntersects(a.bb, b.bb)
+			!(a.bb_l <= b.bb_r && b.bb_l <= a.bb_r && a.bb_b <= b.bb_t && b.bb_b <= a.bb_t)
 			// Don't collide shapes attached to the same body.
 			|| a.body === b.body
 			// Don't collide objects in the same non-zero group
