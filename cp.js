@@ -248,10 +248,10 @@ var Vect = exports.Vect = function(x, y)
 {
 	this.x = x;
 	this.y = y;
-//	numVects++;
+	numVects++;
 
-//	var s = new Error().stack;
-//	traces[s] = traces[s] ? traces[s]+1 : 1;
+	var s = new Error().stack;
+	traces[s] = traces[s] ? traces[s]+1 : 1;
 };
 
 exports.v = {};
@@ -518,7 +518,7 @@ var BB = function(l, b, r, t)
 	this.r = r;
 	this.t = t;
 
-//	numBB++;
+	numBB++;
 }
 
 var bbNewForCircle = function(p, r)
@@ -792,7 +792,8 @@ CircleShape.prototype = Object.create(Shape.prototype);
 
 CircleShape.prototype.cacheData = function(p, rot)
 {
-	var c = this.tc = vadd(p, vrotate(this.c, rot));
+	//var c = this.tc = vadd(p, vrotate(this.c, rot));
+	var c = this.tc = vrotate(this.c, rot).add(p);
 	return bbNewForCircle(c, this.r);
 };
 
@@ -1317,7 +1318,7 @@ var Body = exports.Body = function(m, i) {
 	this.w_limit = Infinity;
 	
 	// This stuff is all private.
-	this.v_bias = new Vect(0,0);
+	this.v_biasx = this.v_biasy = 0;
 	this.w_bias = 0;
 	
 	this.space = null;
@@ -1338,6 +1339,7 @@ var Body = exports.Body = function(m, i) {
 	this.setMoment(i);
 
 	// Set this.a and this.rot
+	this.rot = new Vect(0,0);
 	this.setAngle(0);
 };
 
@@ -1460,7 +1462,10 @@ Body.prototype.setAngleInternal = function(angle)
 {
 	assert(!isNaN(angle), "Internal Error: Attempting to set body's angle to NaN");
 	this.a = angle;//fmod(a, (cpFloat)M_PI*2.0f);
-	this.rot = vforangle(angle);
+
+	//this.rot = vforangle(angle);
+	this.rot.x = Math.cos(angle);
+	this.rot.y = Math.sin(angle);
 };
 
 Body.prototype.setAngle = function(angle)
@@ -1472,7 +1477,10 @@ Body.prototype.setAngle = function(angle)
 
 Body.prototype.updateVelocity = function(gravity, damping, dt)
 {
-	this.v = vclamp(vadd(vmult(this.v, damping), vmult(vadd(gravity, vmult(this.f, this.m_inv)), dt)), this.v_limit);
+	//this.v = vclamp(vadd(vmult(this.v, damping), vmult(vadd(gravity, vmult(this.f, this.m_inv)), dt)), this.v_limit);
+	var vx = this.v.x * damping + (gravity.x + this.f.x * this.m_inv) * dt;
+	var vy = this.v.y * damping + (gravity.y + this.f.y * this.m_inv) * dt;
+	this.v = vclamp(new Vect(vx, vy), this.v_limit);
 	
 	var w_limit = this.w_limit;
 	this.w = clamp(this.w*damping + this.t*this.i_inv*dt, -w_limit, w_limit);
@@ -1482,10 +1490,15 @@ Body.prototype.updateVelocity = function(gravity, damping, dt)
 
 Body.prototype.updatePosition = function(dt)
 {
-	this.p = vadd(this.p, vmult(vadd(this.v, this.v_bias), dt));
+	//this.p = vadd(this.p, vmult(vadd(this.v, this.v_bias), dt));
+	
+	//this.p = this.p + (this.v + this.v_bias) * dt;
+	this.p.x += (this.v.x + this.v_biasx) * dt;
+	this.p.y += (this.v.y + this.v_biasy) * dt;
+
 	this.setAngleInternal(this.a + (this.w + this.w_bias)*dt);
 	
-	this.v_bias = new Vect(0,0);
+	this.v_biasx = this.v_biasy = 0;
 	this.w_bias = 0;
 	
 	this.sanityCheck();
@@ -1617,8 +1630,8 @@ Body.prototype.kineticEnergy = function()
 
 	All spatial indexes define the following methods:
 		
-	// Get the number of objects in the spatial index.
-	count();
+	// The number of objects in the spatial index.
+	count = 0;
 
 	// Iterate the objects in the spatial index. @c func will be called once for each object.
 	each(func);
@@ -2776,12 +2789,12 @@ Arbiter.prototype.applyImpulse = function()
 		var vry = b.v.y + r2.x * b.w - (a.v.y + r1.x * a.w);
 		
 		//var vb1 = vadd(vmult(vperp(r1), a.w_bias), a.v_bias);
-		var vb1x = (-r1.y) * a.w_bias + a.v_bias.x;
-		var vb1y = ( r1.x) * a.w_bias + a.v_bias.y;
+		var vb1x = (-r1.y) * a.w_bias + a.v_biasx;
+		var vb1y = ( r1.x) * a.w_bias + a.v_biasy;
 
 		//var vb2 = vadd(vmult(vperp(r2), b.w_bias), b.v_bias);
-		var vb2x = (-r2.y) * b.w_bias + b.v_bias.x;
-		var vb2y = ( r2.x) * b.w_bias + b.v_bias.y;
+		var vb2x = (-r2.y) * b.w_bias + b.v_biasx;
+		var vb2y = ( r2.x) * b.w_bias + b.v_biasy;
 		
 		//var vbn = vdot(vsub(vb2, vb1), n);
 		var vbn = vdot2(vb2x-vb1x, vb2y-vb1y, n.x, n.y);
@@ -4526,14 +4539,26 @@ Space.prototype.step = function(dt)
 
 // a and b are bodies.
 var relative_velocity = function(a, b, r1, r2){
-	var v1_sum = vadd(a.v, vmult(vperp(r1), a.w));
-	var v2_sum = vadd(b.v, vmult(vperp(r2), b.w));
+	//var v1_sum = vadd(a.v, vmult(vperp(r1), a.w));
+	var v1_sumx = a.v.x + (-r1.y) * a.w;
+	var v1_sumy = a.v.y + ( r1.x) * a.w;
+
+	//var v2_sum = vadd(b.v, vmult(vperp(r2), b.w));
+	var v2_sumx = b.v.x + (-r2.y) * b.w;
+	var v2_sumy = b.v.y + ( r2.x) * b.w;
 	
-	return vsub(v2_sum, v1_sum);
+//	return vsub(v2_sum, v1_sum);
+	return new Vect(v2_sumx - v1_sumx, v2_sumy - v1_sumy);
 };
 
 var normal_relative_velocity = function(a, b, r1, r2, n){
-	return vdot(relative_velocity(a, b, r1, r2), n);
+	//return vdot(relative_velocity(a, b, r1, r2), n);
+	var v1_sumx = a.v.x + (-r1.y) * a.w;
+	var v1_sumy = a.v.y + ( r1.x) * a.w;
+	var v2_sumx = b.v.x + (-r2.y) * b.w;
+	var v2_sumy = b.v.y + ( r2.x) * b.w;
+
+	return vdot2(v2_sumx - v1_sumx, v2_sumy - v1_sumy, n.x, n.y);
 };
 
 /*
@@ -4566,8 +4591,8 @@ var apply_impulses = function(a, b, r1, r2, jx, jy)
 var apply_bias_impulse = function(body, jx, jy, r)
 {
 	//body.v_bias = vadd(body.v_bias, vmult(j, body.m_inv));
-	body.v_bias.x += jx * body.m_inv;
-	body.v_bias.y += jy * body.m_inv;
+	body.v_biasx += jx * body.m_inv;
+	body.v_biasy += jy * body.m_inv;
 	body.w_bias += body.i_inv*vcross2(r.x, r.y, jx, jy);
 };
 

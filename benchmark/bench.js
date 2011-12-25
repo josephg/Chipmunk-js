@@ -370,9 +370,20 @@ add_benchmark('NoCollide', function(){
 
 var SEED = 123124;
 
+var reset_stats = function() {
+	traces = {};
+	numVects = 0;
+	numContacts = 0;
+	numNodes = 0;
+	numLeaves = 0;
+	numBB = 0;
+};
+
 var run_bench = function(bench, num) {
 	mersenne.seed(SEED);
 	bench.init();
+
+//	reset_stats();
 
 	var start = Date.now();
 	for (var s = 0; s < num; s++) {
@@ -414,8 +425,8 @@ var profile = function(){
 	run_bench(bench_list[0], 50);
 };
 
-bench();
-//profile();
+//bench();
+profile();
 console.log('vects: ' + numVects);
 console.log('contacts: ' + numContacts);
 console.log('node: ' + numNodes);
