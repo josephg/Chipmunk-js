@@ -2,9 +2,6 @@
 
 all: cp.min.js bench.js demos.js
 
-cp.min.js: cp.js
-	uglifyjs $+ > $@
-
 js = chipmunk.js \
 		 cpVect.js \
 		 cpBB.js \
@@ -33,19 +30,19 @@ jsfiles = $(addprefix lib/, $(js))
 constraintfiles = $(addprefix lib/constraints/, $(constraints))
 demofiles = $(addprefix demo/, $(demos))
 
-cp.js: $(jsfiles) cpConstraints.js
+cp.js: $(jsfiles) $(constraintfiles)
 	echo '(function(){' > $@
 	cat $+ >> $@
 	echo "})();" >> $@
 
-cpConstraints.js: $(constraintfiles)
-	cat $+ > $@
+cp.min.js: cp.js
+	uglifyjs $+ > $@
 
-bench.js: $(jsfiles) cpConstraints.js benchmark/mersenne.js benchmark/bench.js
+bench.js: $(jsfiles) $(constraintfiles) benchmark/mersenne.js benchmark/bench.js
 	cat $+ > $@
 
 demos.js: $(demofiles)
 	cat $+ > $@
 
 clean:
-	rm -f cp.js cp.min.js cpConstraints.js bench.js demos.js
+	rm -f cp.js cp.min.js bench.js demos.js
