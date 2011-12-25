@@ -383,7 +383,7 @@ var run_bench = function(bench, num) {
 	mersenne.seed(SEED);
 	bench.init();
 
-//	reset_stats();
+	reset_stats();
 
 	var start = Date.now();
 	for (var s = 0; s < num; s++) {
@@ -422,7 +422,7 @@ var bench = function(){
 };
 
 var profile = function(){
-	run_bench(bench_list[0], 50);
+	run_bench(bench_list[1], 2);
 };
 
 //bench();
