@@ -4,8 +4,25 @@ var v = function(x, y) {
 };
 
 var Demo = function() {
-	this.space = new cp.Space();
+	var space = this.space = new cp.Space();
 	this.remainder = 0;
+	
+
+	// HACK HACK HACK - this shouldn't be here.
+	var self = this;
+	var canvas2point = function(x, y) {
+		return v(x / self.scale, 480 - y / self.scale);
+	};
+
+	this.canvas.onmousedown = function(e) {
+		radius = 10;
+		mass = 3;
+		body = space.addBody(new cp.Body(mass, cp.momentForCircle(mass, 0, radius, v(0, 0))));
+		body.setPos(canvas2point(e.clientX, e.clientY));
+		circle = space.addShape(new cp.CircleShape(body, radius, v(0, 0)));
+		circle.setElasticity(0.5);
+		return circle.setFriction(1);
+	};
 };
 
 var canvas = Demo.prototype.canvas = document.getElementsByTagName('canvas')[0];
