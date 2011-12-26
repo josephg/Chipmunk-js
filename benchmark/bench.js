@@ -20,8 +20,8 @@ var simple_terrain_verts = [
 ];
 
 var frand_unit_circle = function(){
-	var v = new Vect(mersenne.rand_real()*2 - 1, mersenne.rand_real()*2 - 1);
-	return (vlengthsq(v) < 1 ? v : frand_unit_circle());
+	var vv = new Vect(mersenne.rand_real()*2 - 1, mersenne.rand_real()*2 - 1);
+	return (vlengthsq(vv) < 1 ? vv : frand_unit_circle());
 };
 
 var add_circle = function(i, radius){
@@ -271,7 +271,8 @@ add_benchmark('BouncyTerrainCircles 500', function(){
 		var mass = radius*radius;
 		var body = space.addBody(new Body(mass, momentForCircle(mass, 0, radius, vzero)));
 		body.p = vadd(vmult(frand_unit_circle(), 130), vzero);
-		body.setVelocity(vmult(frand_unit_circle(), 50));
+		var vv = vmult(frand_unit_circle(), 50);
+		body.vx = vv.x; body.vy = vv.y;
 		
 		var shape = space.addShape(new CircleShape(body, radius, vzero));
 		shape.e = 1;
@@ -302,7 +303,8 @@ add_benchmark('BouncyTerrainHexagons 500', function(){
 		var mass = radius*radius;
 		var body = space.addBody(new Body(mass, momentForPoly(mass, hexagon, vzero)));
 		body.p = vadd(vmult(frand_unit_circle(), 130), vzero);
-		body.setVelocity(vmult(frand_unit_circle(), 50));
+		var vv = vmult(frand_unit_circle(), 50);
+		body.vx = vv.x; body.vy = vv.y;
 		
 		var shape = space.addShape(new PolyShape(body, hexagon, vzero));
 		shape.e = 1;
@@ -341,7 +343,7 @@ add_benchmark('NoCollide', function(){
 		var mass = 7;
 		var body = space.addBody(new Body(mass, momentForCircle(mass, 0, radius, vzero)));
 		body.p = v(-320, y);
-		body.setVelocity(v(100, 0));
+		body.vx = 100;
 		
 		var shape = space.addShape(new CircleShape(body, radius, vzero));
 		shape.e = 1;
@@ -352,7 +354,7 @@ add_benchmark('NoCollide', function(){
 		var mass = 7;
 		var body = space.addBody(new Body(mass, momentForCircle(mass, 0, radius, vzero)));
 		body.p = v(x, -240);
-		body.setVelocity(v(0, 100));
+		body.vy = 100;
 		
 		var shape = space.addShape(new CircleShape(body, radius, vzero));
 		shape.e = 1;
@@ -442,53 +444,61 @@ var run_bench = function(bench, num) {
 	return end - start;
 };
 
+if(typeof(print) === 'undefined') {
+	var print = console.warn;
+}
+
 var bench = function(){
 	var NUM = 200;
-	console.log("Running " + NUM + " steps of each simulation with a seed of " + SEED);
+	print("Running " + NUM + " steps of each simulation with a seed of " + SEED);
 
 	for(var i = 0; i < bench_list.length; i++){
+	//var i = bench_list.length - 1; {
 		var bench = bench_list[i];
 
-		console.warn(bench.name);
+		print(bench.name);
 
-		sample = new Array(5);
-		for(var run = 0; run < 5; run++) {
+		sample = new Array(9);
+		for(var run = 0; run < sample.length; run++) {
 			sample[run] = run_bench(bench, NUM);
-			console.warn("Run " + (run+1) + ": " + sample[run])
+			print("Run " + (run+1) + ": " + sample[run])
 		}
 
 		sample.sort();
-		bench.time = (sample[1] + sample[2] + sample[3]) / 3;
+		bench.time = (sample[3] + sample[4] + sample[5]) / 3;
 
-		console.warn(bench.name + " in " + bench.time + " ms");
-		console.warn();
+		print(bench.name + " in " + bench.time + " ms");
+		print();
 	}
+
 
 	for(var i = 0; i < bench_list.length; i++){
 		var bench = bench_list[i];
-		console.log(bench.time);
+		print(bench.time);
 	}
 };
 
 var profile = function(){
-	//run_bench(bench_list[bench_list.length - 1], 500);
+	//run_bench(bench_list[bench_list.length - 1], 5000);
 	run_bench(bench_list[0], 50);
 };
 
-//bench();
-profile();
+bench();
+//profile();
 
-console.log('vects: ' + numVects);
-console.log('contacts: ' + numContacts);
-console.log('node: ' + numNodes);
-console.log('leaf: ' + numLeaves);
-console.log('bb: ' + numBB);
 
-console.log(numVects);
-console.log(numContacts);
-console.log(numNodes);
-console.log(numLeaves);
-console.log(numBB);
+print('vects: ' + numVects);
+print('contacts: ' + numContacts);
+print('node: ' + numNodes);
+print('leaf: ' + numLeaves);
+print('bb: ' + numBB);
+
+print(numVects);
+print(numContacts);
+print(numNodes);
+print(numLeaves);
+print(numBB);
+
 
 var tracesArr = [];
 for(trace in traces) {

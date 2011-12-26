@@ -2932,6 +2932,14 @@ Arbiter.prototype.applyImpulse = function()
 		
 		//var vbn = vdot(vsub(vb2, vb1), n);
 		var vbn = vdot2(vb2x-vb1x, vb2y-vb1y, n.x, n.y);
+
+		//var vbn = n.x*(b.v_biasx - r2.y * b.w_bias - a.v_biasx + r1.y * a.w_bias) +
+		//		n.y*(r2.x*b.w_bias + b.v_biasy - r1.x * a.w_bias - a.v_biasy);
+
+		//if (vbn != vbn2) {
+		//	throw new Error('asdfdsf ' + vbn + ' ' + vbn2);
+		//}
+
 		var vrn = vdot2(vrx, vry, n.x, n.y);
 		//var vrt = vdot(vadd(vr, surface_vr), vperp(n));
 		var vrt = vdot2(vrx + surface_vr.x, vry + surface_vr.y, -n.y, n.x);
@@ -2958,8 +2966,9 @@ Arbiter.prototype.applyImpulse = function()
 		//apply_impulses(a, b, r1, r2, vrotate(n, new Vect(con.jnAcc - jnOld, con.jtAcc - jtOld)));
 		var rot_x = con.jnAcc - jnOld;
 		var rot_y = con.jtAcc - jtOld;
-		apply_impulses(a, b, r1, r2, n.x*rot_x - n.y*rot_y, n.x*rot_y + n.y*rot_x);
 
+		// Inlining apply_impulses decreases speed for some reason :/
+		apply_impulses(a, b, r1, r2, n.x*rot_x - n.y*rot_y, n.x*rot_y + n.y*rot_x);
 	}
 };
 
@@ -3306,6 +3315,7 @@ var collideShapes = exports.collideShapes = function(a, b)
 	assert(a.collisionCode <= b.collisionCode, 'Collided shapes must be sorted by type');
 	return a.collisionTable[b.collisionCode](a, b);
 };
+
 /* Copyright (c) 2007 Scott Lembcke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
