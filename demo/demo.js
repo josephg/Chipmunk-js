@@ -132,7 +132,7 @@ Demo.prototype.step = function() {
 
 	// Limit the amount of time thats passed to 0.1 - if the user switches tabs or
 	// has a slow computer, we'll just slow the simulation down.
-	dt = Math.min(dt, 0.1);
+	dt = Math.min(dt, 1/25);
 
 	this.remainder += dt;
 
@@ -174,11 +174,12 @@ cp.PolyShape.prototype.draw = function(ctx, scale, point2canvas)
 	ctx.beginPath();
 
 	var verts = this.tVerts;
-	var lastPoint = point2canvas(verts[verts.length - 1]);
+	var len = verts.length;
+	var lastPoint = point2canvas(new cp.Vect(verts[len - 2], verts[len - 1]));
 	ctx.moveTo(lastPoint.x, lastPoint.y);
 
-	for(var i = 0; i < verts.length; i++){
-		var p = point2canvas(verts[i]);
+	for(var i = 0; i < len; i+=2){
+		var p = point2canvas(new cp.Vect(verts[i], verts[i+1]));
 		ctx.lineTo(p.x, p.y);
 	}
 	ctx.fill();
@@ -221,6 +222,8 @@ var styles = [];
 for (var i = 0; i < 100; i++) {
 	styles.push("rgb(" + randColor() + ", " + randColor() + ", " + randColor() + ")");
 }
+
+//styles = ['rgba(255,0,0,0.5)', 'rgba(0,255,0,0.5)', 'rgba(0,0,255,0.5)'];
 
 cp.Shape.prototype.style = function() {
   var body;

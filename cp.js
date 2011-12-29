@@ -52,10 +52,12 @@ var assertSoft = function(value, message)
 
 var hashPair = function(a, b)
 {
+//	assert(typeof(a) === 'string' || typeof(a) === 'number', "HashPair used on something not a string or a number");
 	return a + ' ' + b;
 };
 
 var numContacts = 0;
+
 var Contact = function(p, n, dist, hash)
 {
 	this.p = p;
@@ -132,12 +134,15 @@ var momentForPoly = exports.momentForPoly = function(m, verts, offset)
 {
 	var sum1 = 0;
 	var sum2 = 0;
-	for(var i=0, len=verts.length; i<len; i++){
-		var v1 = vadd(verts[i], offset);
-		var v2 = vadd(verts[(i+1)%len], offset);
-		
-		var a = vcross(v2, v1);
-		var b = vdot(v1, v1) + vdot(v1, v2) + vdot(v2, v2);
+	var len = verts.length;
+	for(var i=0; i<len; i+=2){
+		var v1x = verts[i] + offset.x;
+	 	var v1y = verts[i+1] + offset.y;
+		var v2x = verts[(i+2)%len] + offset.x;
+		var v2y = verts[(i+3)%len] + offset.y;
+
+		var a = vcross2(v2x, v2y, v1x, v1y);
+		var b = vdot2(v1x, v1y, v1x, v1y) + vdot2(v1x, v1y, v2x, v2y) + vdot2(v2x, v2y, v2x, v2y);
 		
 		sum1 += a*b;
 		sum2 += a;
@@ -148,6 +153,7 @@ var momentForPoly = exports.momentForPoly = function(m, verts, offset)
 
 var areaForPoly = exports.areaForPoly = function(verts)
 {
+	throw new Error('Not updated for flat verts');
 	var area = 0;
 	for(var i=0, len=verts.length; i<len; i++){
 		area += vcross(verts[i], verts[(i+1)%len]);
@@ -158,6 +164,7 @@ var areaForPoly = exports.areaForPoly = function(verts)
 
 var centroidForPoly = exports.centroidForPoly = function(verts)
 {
+	throw new Error('Not updated for flat verts');
 	var sum = 0;
 	var vsum = [0,0];
 	
@@ -175,6 +182,7 @@ var centroidForPoly = exports.centroidForPoly = function(verts)
 
 var recenterPoly = exports.recenterPoly = function(verts)
 {
+	throw new Error('Not updated for flat verts');
 	var centroid = centroidForPoly(verts);
 	
 	for(var i=0; i<verts.length; i++){
@@ -1052,13 +1060,17 @@ exports.segmentQueryHitDist = function(start, end, info)
 /// Check that a set of vertexes is convex and has a clockwise winding.
 var polyValidate = function(verts)
 {
-	var numVerts = verts.length;
-	for(var i=0; i<numVerts; i++){
-		var a = verts[i];
-		var b = verts[(i+1)%numVerts];
-		var c = verts[(i+2)%numVerts];
+	var len = verts.length;
+	for(var i=0; i<len; i+=2){
+		var ax = verts[i];
+	 	var ay = verts[i+1];
+		var bx = verts[(i+2)%len];
+		var by = verts[(i+3)%len];
+		var cx = verts[(i+4)%len];
+		var cy = verts[(i+5)%len];
 		
-		if(vcross(vsub(b, a), vsub(c, b)) > 0){
+		//if(vcross(vsub(b, a), vsub(c, b)) > 0){
+		if(vcross2(bx - ax, by - ay, cx - bx, cy - by) > 0){
 			return false;
 		}
 	}
@@ -1070,6 +1082,8 @@ var polyValidate = function(verts)
 /// The vertexes must be convex and have a clockwise winding.
 var PolyShape = exports.PolyShape = function(body, verts, offset)
 {
+	assert(verts.length >= 4, "Polygons require some verts");
+	assert(typeof(verts[0]) === 'number', 'Polygon verticies should be specified in a flattened list');
 	// Fail if the user attempts to pass a concave poly, or a bad winding.
 	assert(polyValidate(verts), "Polygon is concave or has a reversed winding.");
 	
@@ -1087,24 +1101,31 @@ var Axis = function(n, d) {
 
 PolyShape.prototype.setVerts = function(verts, offset)
 {
-	var numVerts = verts.length;
+	var len = verts.length;
+	var numVerts = len >> 1;
 
 	// This a pretty bad way to do this in javascript. As a first pass, I want to keep
 	// the code similar to the C.
-	this.verts = new Array(numVerts);
-	this.tVerts = new Array(numVerts);
-
+	this.verts = new Array(len);
+	this.tVerts = new Array(len);
 	this.axes = new Array(numVerts);
 	this.tAxes = new Array(numVerts);
 	
-	for(var i=0; i<numVerts; i++){
-		var a = vadd(offset, verts[i]);
-		var b = vadd(offset, verts[(i+1)%numVerts]);
-		var n = vnormalize(vperp(vsub(b, a)));
+	for(var i=0; i<len; i+=2){
+		//var a = vadd(offset, verts[i]);
+		//var b = vadd(offset, verts[(i+1)%numVerts]);
+		var ax = verts[i] + offset.x;
+	 	var ay = verts[i+1] + offset.y;
+		var bx = verts[(i+2)%len] + offset.x;
+		var by = verts[(i+3)%len] + offset.y;
 
-		this.verts[i] = a;
-		this.axes[i] = new Axis(n, vdot(n, a));
-		this.tAxes[i] = new Axis(vzero, 0);
+		// Inefficient, but only called during object initialization.
+		var n = vnormalize(vperp(new Vect(bx-ax, by-ay)));
+
+		this.verts[i  ] = ax;
+		this.verts[i+1] = ay;
+		this.axes[i>>1] = new Axis(n, vdot2(n.x, n.y, ax, ay));
+		this.tAxes[i>>1] = new Axis(new Vect(0,0), 0);
 	}
 };
 
@@ -1121,10 +1142,10 @@ var BoxShape = exports.BoxShape = function(body, width, height)
 var BoxShape2 = exports.BoxShape2 = function(body, box)
 {
 	var verts = [
-		new Vect(box.l, box.b),
-		new Vect(box.l, box.t),
-		new Vect(box.r, box.t),
-		new Vect(box.r, box.b),
+		box.l, box.b,
+		box.l, box.t,
+		box.r, box.t,
+		box.r, box.b,
 	];
 	
 	return new PolyShape(body, verts, vzero);
@@ -1138,16 +1159,25 @@ PolyShape.prototype.transformVerts = function(p, rot)
 	var l = Infinity, r = -Infinity;
 	var b = Infinity, t = -Infinity;
 	
-	for(var i=0; i<src.length; i++){
-		var v = vadd(p, vrotate(src[i], rot));
+	for(var i=0; i<src.length; i+=2){
+		//var v = vadd(p, vrotate(src[i], rot));
+		var x = src[i];
+	 	var y = src[i+1];
+
+		var vx = p.x + x*rot.x - y*rot.y;
+		var vy = p.y + x*rot.y + y*rot.x;
+
+		//console.log('(' + x + ',' + y + ') -> (' + vx + ',' + vy + ')');
 		
-		dst[i] = v;
-		l = min(l, v.x);
-		r = max(r, v.x);
-		b = min(b, v.y);
-		t = max(t, v.y);
+		dst[i] = vx;
+		dst[i+1] = vy;
+
+		l = min(l, vx);
+		r = max(r, vx);
+		b = min(b, vy);
+		t = max(t, vy);
 	}
-	
+
 	this.bb_l = l;
 	this.bb_b = b;
 	this.bb_r = r;
@@ -1199,7 +1229,8 @@ PolyShape.prototype.segmentQuery = function(a, b)
 {
 	var axes = this.tAxes;
 	var verts = this.tVerts;
-	var numVerts = this.verts.length;
+	var numVerts = axes.length;
+	var len = numVerts * 2;
 	
 	for(var i=0; i<numVerts; i++){
 		var n = axes[i].n;
@@ -1212,8 +1243,8 @@ PolyShape.prototype.segmentQuery = function(a, b)
 		
 		var point = vlerp(a, b, t);
 		var dt = -vcross(n, point);
-		var dtMin = -vcross(n, verts[i]);
-		var dtMax = -vcross(n, verts[(i+1)%numVerts]);
+		var dtMin = -vcross2(n.x, n.y, verts[i], verts[i+1]);
+		var dtMax = -vcross2(n.x, n.y, verts[(i+2)%len], verts[(i+3)%len]);
 		
 		if(dtMin <= dt && dt <= dtMax){
 			// josephg: In the original C code, this function keeps
@@ -1230,42 +1261,45 @@ PolyShape.getNumVerts = function()
 	return this.verts.length;
 };*/
 
+/*
 PolyShape.prototype.getVert = function(idx)
 {
 	return this.verts[idx];
-};
+};*/
 
 PolyShape.prototype.valueOnAxis = function(n, d)
 {
 	var verts = this.tVerts;
-	var m = vdot(n, verts[0]);
+	var m = vdot2(n.x, n.y, verts[0], verts[1]);
 	
-	for(var i=1; i<verts.length; i++){
-		m = min(m, vdot(n, verts[i]));
+	for(var i=2; i<verts.length; i+=2){
+		m = min(m, vdot2(n.x, n.y, verts[i], verts[i+1]));
 	}
 	
 	return m - d;
 };
 
-PolyShape.prototype.containsVert = function(v)
+PolyShape.prototype.containsVert = function(vx, vy)
 {
 	var axes = this.tAxes;
 	
 	for(var i=0; i<axes.length; i++){
-		var dist = vdot(axes[i].n, v) - axes[i].d;
+		var n = axes[i].n;
+		var dist = vdot2(n.x, n.y, vx, vy) - axes[i].d;
 		if(dist > 0) return false;
 	}
 	
 	return true;
 };
 
-PolyShape.prototype.containsVertPartial = function(v, n)
+PolyShape.prototype.containsVertPartial = function(vx, vy, n)
 {
 	var axes = this.tAxes;
 	
 	for(var i=0; i<axes.length; i++){
-		if(vdot(axes[i].n, n) < 0) continue;
-		var dist = vdot(axes[i].n, v) - axes[i].d;
+		var n = axes[i].n;
+		if(vdot(n, n) < 0) continue;
+		var dist = vdot2(n.x, n.y, vx, vy) - axes[i].d;
 		if(dist > 0) return false;
 	}
 	
@@ -2904,14 +2938,20 @@ Arbiter.prototype.applyCachedImpulse = function(dt_coef)
 
 // TODO is it worth splitting velocity/position correction?
 
+var numApplyImpulse = 0;
+var numApplyContact = 0;
+
 Arbiter.prototype.applyImpulse = function()
 {
+	numApplyImpulse++;
+	//if (!this.contacts) { throw new Error('contacts is undefined'); }
 	var a = this.body_a;
 	var b = this.body_b;
 	var surface_vr = this.surface_vr;
 	var friction = this.u;
 
 	for(var i=0; i<this.contacts.length; i++){
+		numApplyContact++;
 		var con = this.contacts[i];
 		var nMass = con.nMass;
 		var n = con.n;
@@ -2923,22 +2963,11 @@ Arbiter.prototype.applyImpulse = function()
 		var vry = b.vy + r2.x * b.w - (a.vy + r1.x * a.w);
 		
 		//var vb1 = vadd(vmult(vperp(r1), a.w_bias), a.v_bias);
-		var vb1x = (-r1.y) * a.w_bias + a.v_biasx;
-		var vb1y = ( r1.x) * a.w_bias + a.v_biasy;
-
 		//var vb2 = vadd(vmult(vperp(r2), b.w_bias), b.v_bias);
-		var vb2x = (-r2.y) * b.w_bias + b.v_biasx;
-		var vb2y = ( r2.x) * b.w_bias + b.v_biasy;
-		
 		//var vbn = vdot(vsub(vb2, vb1), n);
-		var vbn = vdot2(vb2x-vb1x, vb2y-vb1y, n.x, n.y);
 
-		//var vbn = n.x*(b.v_biasx - r2.y * b.w_bias - a.v_biasx + r1.y * a.w_bias) +
-		//		n.y*(r2.x*b.w_bias + b.v_biasy - r1.x * a.w_bias - a.v_biasy);
-
-		//if (vbn != vbn2) {
-		//	throw new Error('asdfdsf ' + vbn + ' ' + vbn2);
-		//}
+		var vbn = n.x*(b.v_biasx - r2.y * b.w_bias - a.v_biasx + r1.y * a.w_bias) +
+				n.y*(r2.x*b.w_bias + b.v_biasy - r1.x * a.w_bias - a.v_biasy);
 
 		var vrn = vdot2(vrx, vry, n.x, n.y);
 		//var vrt = vdot(vadd(vr, surface_vr), vperp(n));
@@ -3096,17 +3125,21 @@ var findVertsFallback = function(poly1, poly2, n, dist)
 {
 	var arr = [];
 
-	for(var i=0; i<poly1.tVerts.length; i++){
-		var v = poly1.tVerts[i];
-		if(poly2.containsVertPartial(v, vneg(n))){
-			arr.push(new Contact(v, n, dist, hashPair(poly1.hashid, i)));
+	var verts1 = poly1.tVerts;
+	for(var i=0; i<verts1.length; i+=2){
+		var vx = verts1[i];
+		var vy = verts1[i+1];
+		if(poly2.containsVertPartial(vx, vy, vneg(n))){
+			arr.push(new Contact(new Vect(vx, vy), n, dist, hashPair(poly1.hashid, i)));
 		}
 	}
 	
-	for(var i=0; i<poly2.tVerts.length; i++){
-		var v = poly2.tVerts[i];
-		if(poly1.containsVertPartial(v, n)){
-			arr.push(new Contact(v, n, dist, hashPair(poly2.hashid, i)));
+	var verts2 = poly2.tVerts;
+	for(var i=0; i<verts2.length; i+=2){
+		var vx = verts2[i];
+		var vy = verts2[i+1];
+		if(poly1.containsVertPartial(vx, vy, n)){
+			arr.push(new Contact(new Vect(vx, vy), n, dist, hashPair(poly2.hashid, i)));
 		}
 	}
 	
@@ -3118,17 +3151,21 @@ var findVerts = function(poly1, poly2, n, dist)
 {
 	var arr = [];
 
-	for(var i=0; i<poly1.tVerts.length; i++){
-		var v = poly1.tVerts[i];
-		if(poly2.containsVert(v)){
-			arr.push(new Contact(v, n, dist, hashPair(poly1.hashid, i)));
+	var verts1 = poly1.tVerts;
+	for(var i=0; i<verts1.length; i+=2){
+		var vx = verts1[i];
+		var vy = verts1[i+1];
+		if(poly2.containsVert(vx, vy)){
+			arr.push(new Contact(new Vect(vx, vy), n, dist, hashPair(poly1.hashid, i>>1)));
 		}
 	}
 	
-	for(var i=0; i<poly2.tVerts.length; i++){
-		var v = poly2.tVerts[i];
-		if(poly1.containsVert(v)){
-			arr.push(new Contact(v, n, dist, hashPair(poly2.hashid, i)));
+	var verts2 = poly2.tVerts;
+	for(var i=0; i<verts2.length; i+=2){
+		var vx = verts2[i];
+		var vy = verts2[i+1];
+		if(poly1.containsVert(vx, vy)){
+			arr.push(new Contact(new Vect(vx, vy), n, dist, hashPair(poly2.hashid, i>>1)));
 		}
 	}
 	
@@ -3139,11 +3176,11 @@ var findVerts = function(poly1, poly2, n, dist)
 var poly2poly = function(poly1, poly2)
 {
 	var mini1 = findMSA(poly2, poly1.tAxes);
-	if(mini1 == -1) return 0;
+	if(mini1 == -1) return NONE;
 	var min1 = last_MSA_min;
 	
 	var mini2 = findMSA(poly1, poly2.tAxes);
-	if(mini2 == -1) return 0;
+	if(mini2 == -1) return NONE;
 	var min2 = last_MSA_min;
 	
 	// There is overlap, find the penetrating verts
@@ -3168,12 +3205,14 @@ var findPointsBehindSeg = function(arr, seg, poly, pDist, coef)
 	var dtb = vcross(seg.tn, seg.tb);
 	var n = vmult(seg.tn, coef);
 	
-	for(var i=0; i<poly.tVerts.length; i++){
-		var v = poly.tVerts[i];
-		if(vdot(v, n) < vdot(seg.tn, seg.ta)*coef + seg.r){
-			var dt = vcross(seg.tn, v);
+	var verts = poly.tVerts;
+	for(var i=0; i<verts.length; i+=2){
+		var vx = verts[i];
+		var vy = verts[i+1];
+		if(vdot2(vx, vy, n.x, n.y) < vdot(seg.tn, seg.ta)*coef + seg.r){
+			var dt = vcross2(seg.tn.x, seg.tn.y, vx, vy);
 			if(dta >= dt && dt >= dtb){
-				arr.push(new Contact(v, n, pDist, hashPair(poly.hashid, i)));
+				arr.push(new Contact(new Vect(vx, vy), n, pDist, hashPair(poly.hashid, i)));
 			}
 		}
 	}
@@ -3210,9 +3249,9 @@ var seg2poly = function(seg, poly)
 	
 	var va = vadd(seg.ta, vmult(poly_n, seg.r));
 	var vb = vadd(seg.tb, vmult(poly_n, seg.r));
-	if(poly.containsVert(va))
+	if(poly.containsVert(va.x, va.y))
 		arr.push(new Contact(va, poly_n, poly_min, hashPair(seg.hashid, 0)));
-	if(poly.containsVert(vb))
+	if(poly.containsVert(vb.x, vb.y))
 		arr.push(new Contact(vb, poly_n, poly_min, hashPair(seg.hashid, 1)));
 	
 	// Floating point precision problems here.
@@ -3228,16 +3267,23 @@ var seg2poly = function(seg, poly)
 	
 	// If no other collision points are found, try colliding endpoints.
 	if(arr.length === 0){
-		var poly_a = poly.tVerts[mini];
-		var poly_b = poly.tVerts[(mini + 1)%numVerts];
+		var mini2 = mini * 2;
+		var verts = poly.tVerts;
+
+		var poly_a = new Vect(verts[mini2], verts[mini2+1]);
 		
 		var con;
 		if((con = circle2circleQuery(seg.ta, poly_a, seg.r, 0, arr))) return [con];
 		if((con = circle2circleQuery(seg.tb, poly_a, seg.r, 0, arr))) return [con];
+
+		var len = numVerts * 2;
+		var poly_b = new Vect(verts[(mini2+2)%len], verts[(mini2+3)%len]);
 		if((con = circle2circleQuery(seg.ta, poly_b, seg.r, 0, arr))) return [con];
 		if((con = circle2circleQuery(seg.tb, poly_b, seg.r, 0, arr))) return [con];
 	}
 
+//	console.log(poly.tVerts, poly.tAxes);
+//	console.log('seg2poly', arr);
 	return arr;
 };
 
@@ -3260,14 +3306,24 @@ var circle2poly = function(circ, poly)
 	}
 	
 	var n = axes[mini].n;
-	var a = poly.tVerts[mini];
-	var b = poly.tVerts[(mini + 1)%poly.tVerts.length];
-	var dta = vcross(n, a);
-	var dtb = vcross(n, b);
+
+	var verts = poly.tVerts;
+	var len = verts.length;
+	var mini2 = mini<<1;
+
+	//var a = poly.tVerts[mini];
+	//var b = poly.tVerts[(mini + 1)%poly.tVerts.length];
+	var ax = verts[mini2];
+	var ay = verts[mini2+1];
+	var bx = verts[(mini2+2)%len];
+	var by = verts[(mini2+3)%len];
+
+	var dta = vcross2(n.x, n.y, ax, ay);
+	var dtb = vcross2(n.x, n.y, bx, by);
 	var dt = vcross(n, circ.tc);
 		
 	if(dt < dtb){
-		var con = circle2circleQuery(circ.tc, b, circ.r, 0, con);
+		var con = circle2circleQuery(circ.tc, new Vect(bx, by), circ.r, 0, con);
 		return con ? [con] : NONE;
 	} else if(dt < dta) {
 		return [new Contact(
@@ -3277,7 +3333,7 @@ var circle2poly = function(circ, poly)
 			0
 		)];
 	} else {
-		var con = circle2circleQuery(circ.tc, a, circ.r, 0, con);
+		var con = circle2circleQuery(circ.tc, new Vect(ax, ay), circ.r, 0, con);
 		return con ? [con] : NONE;
 	}
 };

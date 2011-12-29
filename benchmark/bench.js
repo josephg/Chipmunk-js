@@ -48,10 +48,12 @@ var add_box = function(i, size){
 };
 
 var add_hexagon = function(i, radius){
-	var hexagon = new Array(6);
-	for(var i=0; i<6; i++){
-		var angle = -Math.PI*2*i/6;
-		hexagon[i] = vmult(v(Math.cos(angle), Math.sin(angle)), radius);
+	var hexagon = new Array(12);
+	for(var i=0; i<12; i+=2){
+		var angle = -Math.PI*i/6;
+		var p = vmult(v(Math.cos(angle), Math.sin(angle)), radius);
+		hexagon[i] = p.x;
+		hexagon[i+1] = p.y;
 	}
 	
 	var mass = radius*radius;
@@ -190,10 +192,12 @@ add_benchmark('ComplexTerrainHexagons 1000', function(){
 	}
 	
 	var radius = 5;
-	var hexagon = new Array(6);
-	for(var i=0; i<6; i++){
-		var angle = -Math.PI*2*i/6;
-		hexagon[i] = vmult(v(Math.cos(angle), Math.sin(angle)), radius);
+	var hexagon = new Array(12);
+	for(var i=0; i<12; i+=2){
+		var angle = -Math.PI*i/6;
+		var p = vmult(v(Math.cos(angle), Math.sin(angle)), radius);
+		hexagon[i] = p.x;
+		hexagon[i+1] = p.y;
 	}
 	
 	for(var i=0; i<1000; i++){
@@ -293,10 +297,12 @@ add_benchmark('BouncyTerrainHexagons 500', function(){
 	}
 	
 	var radius = 5;
-	var hexagon = new Array(6);
-	for(var i=0; i<6; i++){
-		var angle = -Math.PI*2*i/6;
-		hexagon[i] = vmult(v(Math.cos(angle), Math.sin(angle)), radius);
+	var hexagon = new Array(12);
+	for(var i=0; i<12; i+=2){
+		var angle = -Math.PI*i/6;
+		var p = vmult(v(Math.cos(angle), Math.sin(angle)), radius);
+		hexagon[i] = p.x;
+		hexagon[i+1] = p.y;
 	}
 	
 	for(var i=0; i<500; i++){
@@ -480,7 +486,7 @@ var bench = function(){
 
 var profile = function(){
 	//run_bench(bench_list[bench_list.length - 1], 5000);
-	run_bench(bench_list[0], 50);
+	run_bench(bench_list[7], 1);
 };
 
 bench();
@@ -492,12 +498,16 @@ print('contacts: ' + numContacts);
 print('node: ' + numNodes);
 print('leaf: ' + numLeaves);
 print('bb: ' + numBB);
+print('applyImpulse: ' + numApplyImpulse);
+print('applyContact: ' + numApplyContact);
 
 print(numVects);
 print(numContacts);
 print(numNodes);
 print(numLeaves);
 print(numBB);
+print(numApplyImpulse);
+print(numApplyContact);
 
 
 var tracesArr = [];
