@@ -56,23 +56,6 @@ var hashPair = function(a, b)
 	return a + ' ' + b;
 };
 
-var numContacts = 0;
-
-var Contact = function(p, n, dist, hash)
-{
-	this.p = p;
-	this.n = n;
-	this.dist = dist;
-	
-	this.r1 = this.r2 = vzero;
-	this.nMass = this.tMass = this.bounce = this.bias = 0;
-
-	this.jnAcc = this.jtAcc = this.jBias = 0;
-	
-	this.hash = hash;
-	numContacts++;
-};
-
 var mymin = function(a, b)
 {
 	return a < b ? a : b;
@@ -3035,7 +3018,22 @@ Arbiter.prototype.next = function(body)
  * SOFTWARE.
  */
 
-// typedef int (*collisionFunc)(const cpShape *, const cpShape *, cpContact *);
+var numContacts = 0;
+
+var Contact = function(p, n, dist, hash)
+{
+	this.p = p;
+	this.n = n;
+	this.dist = dist;
+	
+	this.r1 = this.r2 = vzero;
+	this.nMass = this.tMass = this.bounce = this.bias = 0;
+
+	this.jnAcc = this.jtAcc = this.jBias = 0;
+	
+	this.hash = hash;
+	numContacts++;
+};
 
 var NONE = [];
 
