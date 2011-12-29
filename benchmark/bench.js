@@ -1,7 +1,10 @@
 var space;
 var bench_list = [];
 var add_benchmark = function(name, initfn) {
-	bench_list.push({name:name, init:initfn});
+	var bench = typeof(name) === 'string' ? {name: name} : name;
+	bench.init = initfn;
+	bench.dt = bench.dt || 1/60;
+	bench_list.push(bench);
 }
 
 function v(x, y) {
@@ -370,7 +373,7 @@ add_benchmark('NoCollide', function(){
 	return space;
 });
 
-add_benchmark('PyramidTopple', function(){
+add_benchmark({name:'PyramidTopple', dt:1/180, ticks:5000}, function(){
 	var WIDTH = 4;
 	var HEIGHT = 30;
 
@@ -436,15 +439,20 @@ var reset_stats = function() {
 	numBB = 0;
 };
 
-var run_bench = function(bench, num) {
+var run_bench = function(bench) {
+	var DEFAULT_TICKS = 200;
 	mersenne.seed(SEED);
+
+	var ticks = bench.ticks || DEFAULT_TICKS;
+
+	print(ticks, bench.dt);
 	bench.init();
 
 	//reset_stats();
 
 	var start = Date.now();
-	for (var s = 0; s < num; s++) {
-		space.step(1/60);
+	for (var s = 0; s < ticks; s++) {
+		space.step(bench.dt);
 	}
 	var end = Date.now();
 	return end - start;
@@ -455,9 +463,6 @@ if(typeof(print) === 'undefined') {
 }
 
 var bench = function(){
-	var NUM = 200;
-	print("Running " + NUM + " steps of each simulation with a seed of " + SEED);
-
 	for(var i = 0; i < bench_list.length; i++){
 	//var i = bench_list.length - 1; {
 		var bench = bench_list[i];
@@ -466,7 +471,7 @@ var bench = function(){
 
 		sample = new Array(9);
 		for(var run = 0; run < sample.length; run++) {
-			sample[run] = run_bench(bench, NUM);
+			sample[run] = run_bench(bench);
 			print("Run " + (run+1) + ": " + sample[run])
 		}
 
@@ -485,12 +490,14 @@ var bench = function(){
 };
 
 var profile = function(){
-	//run_bench(bench_list[bench_list.length - 1], 5000);
-	run_bench(bench_list[7], 1);
+	var time = run_bench(bench_list[bench_list.length - 1]);
+	//var time = run_bench(bench_list[7], 1);
+
+	print(time + "ms");
 };
 
-bench();
-//profile();
+//bench();
+profile();
 
 
 print('vects: ' + numVects);
