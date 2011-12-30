@@ -93,7 +93,7 @@ var init_SimpleTerrain = function(num, fn){
 
 add_benchmark({name:'SimpleTerrainCircles 1000', ticks:100}, init_SimpleTerrain(1000, function(i) { add_circle(i, 5); }));
 add_benchmark('SimpleTerrainCircles 500', init_SimpleTerrain(500, function(i) { add_circle(i, 5); }));
-add_benchmark({name;'SimpleTerrainCircles 100', ticks:1000}, init_SimpleTerrain(100, function(i) { add_circle(i, 5); }));
+add_benchmark({name:'SimpleTerrainCircles 100', ticks:1000}, init_SimpleTerrain(100, function(i) { add_circle(i, 5); }));
 
 add_benchmark({name:'SimpleTerrainBoxes 1000', ticks:50}, init_SimpleTerrain(1000, function(i) { add_box(i, 10); }));
 add_benchmark('SimpleTerrainBoxes 500', init_SimpleTerrain(500, function(i) { add_box(i, 10); }));
@@ -445,7 +445,6 @@ var run_bench = function(bench) {
 
 	var ticks = bench.ticks || DEFAULT_TICKS;
 
-	print(ticks, bench.dt);
 	bench.init();
 
 	//reset_stats();
