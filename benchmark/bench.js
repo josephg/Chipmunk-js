@@ -91,17 +91,17 @@ var init_SimpleTerrain = function(num, fn){
 	};
 };
 
-add_benchmark('SimpleTerrainCircles 1000', init_SimpleTerrain(1000, function(i) { add_circle(i, 5); }));
+add_benchmark({name:'SimpleTerrainCircles 1000', ticks:100}, init_SimpleTerrain(1000, function(i) { add_circle(i, 5); }));
 add_benchmark('SimpleTerrainCircles 500', init_SimpleTerrain(500, function(i) { add_circle(i, 5); }));
-add_benchmark('SimpleTerrainCircles 100', init_SimpleTerrain(100, function(i) { add_circle(i, 5); }));
+add_benchmark({name;'SimpleTerrainCircles 100', ticks:1000}, init_SimpleTerrain(100, function(i) { add_circle(i, 5); }));
 
-add_benchmark('SimpleTerrainBoxes 1000', init_SimpleTerrain(1000, function(i) { add_box(i, 10); }));
+add_benchmark({name:'SimpleTerrainBoxes 1000', ticks:50}, init_SimpleTerrain(1000, function(i) { add_box(i, 10); }));
 add_benchmark('SimpleTerrainBoxes 500', init_SimpleTerrain(500, function(i) { add_box(i, 10); }));
-add_benchmark('SimpleTerrainBoxes 100', init_SimpleTerrain(100, function(i) { add_box(i, 10); }));
+add_benchmark({name:'SimpleTerrainBoxes 100', ticks:1000}, init_SimpleTerrain(100, function(i) { add_box(i, 10); }));
 
-add_benchmark('SimpleTerrainHexagons 1000', init_SimpleTerrain(1000, function(i) { add_hexagon(i, 5); }));
+add_benchmark({name:'SimpleTerrainHexagons 1000', ticks:100}, init_SimpleTerrain(1000, function(i) { add_hexagon(i, 5); }));
 add_benchmark('SimpleTerrainHexagons 500', init_SimpleTerrain(500, function(i) { add_hexagon(i, 5); }));
-add_benchmark('SimpleTerrainHexagons 100', init_SimpleTerrain(100, function(i) { add_hexagon(i, 5); }));
+add_benchmark({name:'SimpleTerrainHexagons 100', ticks:1000}, init_SimpleTerrain(100, function(i) { add_hexagon(i, 5); }));
 
 
 // SimpleTerrain variable sized objects
@@ -109,21 +109,21 @@ var rand_size = function(){
 	return Math.pow(1.5, lerp(-1.5, 3.5, mersenne.rand_real()));
 };
 
-add_benchmark('SimpleTerrainVCircles 200', function(){
+add_benchmark({name:'SimpleTerrainVCircles 200', ticks:500}, function(){
 	setupSpace_simpleTerrain();
 	for(var i=0; i<200; i++) add_circle(i, 5*rand_size());
 	
 	return space;
 });
 
-add_benchmark('SimpleTerrainVBoxes 200', function(){
+add_benchmark({name:'SimpleTerrainVBoxes 200', ticks:500}, function(){
 	setupSpace_simpleTerrain();
 	for(var i=0; i<200; i++) add_box(i, 8*rand_size());
 	
 	return space;
 });
 
-add_benchmark('SimpleTerrainVHexagons 200', function(){
+add_benchmark({name:'SimpleTerrainVHexagons 200', ticks:500}, function(){
 	setupSpace_simpleTerrain();
 	for(var i=0; i<200; i++) add_hexagon(i, 5*rand_size());
 	
@@ -157,7 +157,7 @@ var complex_terrain_verts = [
 	v(603.00, 475.63), v(590.96, 479.00)
 ];
 
-add_benchmark('ComplexTerrainCircles 1000', function(){
+add_benchmark({name:'ComplexTerrainCircles 1000', ticks:100}, function(){
 	space = new Space();
 	space.iterations = 10;
 	space.gravity = v(0, -100);
@@ -182,7 +182,7 @@ add_benchmark('ComplexTerrainCircles 1000', function(){
 	return space;
 });
 
-add_benchmark('ComplexTerrainHexagons 1000', function(){
+add_benchmark({name:'ComplexTerrainHexagons 1000', ticks:50}, function(){
 	space = new Space();
 	space.iterations = 10;
 	space.gravity = v(0, -100);
@@ -329,7 +329,7 @@ var noCollide_begin = function(arb, space){
 	throw new Exception('Should not get here');
 };
 
-add_benchmark('NoCollide', function(){
+add_benchmark({name:'NoCollide', ticks:2000}, function(){
 	space = new Space();
 	space.iterations = 10;
 	
@@ -496,8 +496,8 @@ var profile = function(){
 	print(time + "ms");
 };
 
-//bench();
-profile();
+bench();
+//profile();
 
 
 print('vects: ' + numVects);
@@ -526,5 +526,5 @@ tracesArr.sort(function(a, b){
 });
 for(var i = 0; i < min(10, tracesArr.length); i++){
 	var t = tracesArr[i];
-	console.log(traces[t] + ': ' + t);
+	print(traces[t] + ': ' + t);
 }
