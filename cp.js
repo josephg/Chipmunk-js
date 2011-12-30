@@ -2053,6 +2053,10 @@ var bbProximity = function(a, b)
 
 var subtreeInsert = function(subtree, leaf, tree)
 {
+	
+//	var s = new Error().stack;
+//	traces[s] = traces[s] ? traces[s]+1 : 1;
+
 	if(subtree == null){
 		return leaf;
 	} else if(subtree.isLeaf){

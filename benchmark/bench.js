@@ -373,7 +373,7 @@ add_benchmark({name:'NoCollide', ticks:2000}, function(){
 	return space;
 });
 
-add_benchmark({name:'PyramidTopple', dt:1/180, ticks:5000}, function(){
+add_benchmark({name:'PyramidTopple', dt:1/180, ticks:400}, function(){
 	var WIDTH = 4;
 	var HEIGHT = 30;
 
@@ -421,6 +421,12 @@ add_benchmark({name:'PyramidTopple', dt:1/180, ticks:5000}, function(){
 			}
 		}
 	}
+
+	// Add a circle to knock the dominoes down
+	var body = space.addBody(new Body(2, momentForCircle(2, 0, 5, v(0,0))));
+	body.setPos(v(65, 100));
+	var shape = space.addShape(new CircleShape(body, 5, v(0,0)));
+	shape.setElasticity(0);
 });
 
 // TODO ideas:
