@@ -605,10 +605,10 @@ var bbSegmentQuery = function(bb, a, b)
 	var tymax = max(ty1, ty2);
 	
 	if(tymin <= txmax && txmin <= tymax){
-		var min = max(txmin, tymin);
-		var max = min(txmax, tymax);
+		var min_ = max(txmin, tymin);
+		var max_ = min(txmax, tymax);
 		
-		if(0.0 <= max && min <= 1.0) return max(min, 0.0);
+		if(0.0 <= max_ && min_ <= 1.0) return max(min_, 0.0);
 	}
 	
 	return Infinity;
@@ -2120,10 +2120,10 @@ var bbTreeSegmentQuery = function(node, a, b)
 	var tymax = max(ty1, ty2);
 	
 	if(tymin <= txmax && txmin <= tymax){
-		var min = max(txmin, tymin);
-		var max = min(txmax, tymax);
+		var min_ = max(txmin, tymin);
+		var max_ = min(txmax, tymax);
 		
-		if(0.0 <= max && min <= 1.0) return max(min, 0.0);
+		if(0.0 <= max_ && min_ <= 1.0) return max(min_, 0.0);
 	}
 	
 	return Infinity;
@@ -2138,11 +2138,11 @@ var subtreeSegmentQuery = function(subtree, a, b, t_exit, func)
 		var t_b = bbTreeSegmentQuery(subtree.B, a, b);
 		
 		if(t_a < t_b){
-			if(t_a < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func, data));
-			if(t_b < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.B, a, b, t_exit, func, data));
+			if(t_a < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func));
+			if(t_b < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.B, a, b, t_exit, func));
 		} else {
-			if(t_b < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.B, a, b, t_exit, func, data));
-			if(t_a < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func, data));
+			if(t_b < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.B, a, b, t_exit, func));
+			if(t_a < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func));
 		}
 		
 		return t_exit;
@@ -2367,7 +2367,7 @@ BBTree.prototype.pointQuery = function(point, func)
 
 BBTree.prototype.segmentQuery = function(a, b, t_exit, func)
 {
-	if(this.root) subtreeSegmentQuery(this, a, b, t_exit, func);
+	if(this.root) subtreeSegmentQuery(this.root, a, b, t_exit, func);
 };
 
 BBTree.prototype.query = function(bb, func)
@@ -4227,7 +4227,7 @@ Space.prototype.segmentQuery = function(start, end, layers, group, func)
 /// Perform a directed line segment query (like a raycast) against the space and return the first shape hit. Returns null if no shapes were hit.
 Space.prototype.segmentQueryFirst = function(start, end, layers, group)
 {
-	var out = null;
+	var out = new SegmentQueryInfo(null, 1, vzero);
 
 	var helper = function(shape){
 		var info;
