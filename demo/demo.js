@@ -73,23 +73,34 @@ Demo.prototype.update = function(dt) {
 };
 
 Demo.prototype.drawInfo = function() {
+	var space = this.space;
+
 	var maxWidth = this.width - 20;
 
 	this.ctx.fillStyle = "black";
 	//this.ctx.fillText(this.ctx.font, 100, 100);
 	var fpsStr = Math.floor(this.fps * 10) / 10;
-	if (this.space.activeShapes.count === 0) {
+	if (space.activeShapes.count === 0) {
 		fpsStr = '--';
 	}
 	this.ctx.fillText("FPS: " + fpsStr, 10, 50, maxWidth);
+	this.ctx.fillText("Step: " + space.stamp, 10, 80, maxWidth);
 
-	this.ctx.fillText("Step: " + this.space.stamp, 10, 80, maxWidth);
+	var arbiters = space.arbiters.length;
+	this.maxArbiters = this.maxArbiters ? Math.max(this.maxArbiters, arbiters) : arbiters;
+	this.ctx.fillText("Arbiters: " + arbiters + " (Max: " + this.maxArbiters + ")", 10, 110, maxWidth);
 
+	var contacts = 0;
+	for(var i = 0; i < arbiters; i++) {
+		contacts += space.arbiters[i].contacts.length;
+	}
+	this.maxContacts = this.maxContacts ? Math.max(this.maxContacts, contacts) : contacts;
+	this.ctx.fillText("Contact points: " + contacts + " (Max: " + this.maxContacts + ")", 10, 140, maxWidth);
 
 	if (this.message) {
 		this.ctx.fillText(this.message, 10, this.height - 50, maxWidth);
 	}
-}
+};
 
 Demo.prototype.draw = function() {
 	var ctx = this.ctx;
