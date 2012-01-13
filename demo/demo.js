@@ -1,7 +1,4 @@
-
-var v = function(x, y) {
-  return new cp.Vect(x, y);
-};
+var v = cp.v;
 
 var ctx;
 
@@ -9,11 +6,20 @@ var Demo = function() {
 	var space = this.space = new cp.Space();
 	this.remainder = 0;
 	this.fps = 0;
+	this.mouse = v(0,0);
 
 	// HACK HACK HACK - this shouldn't be here.
 	var self = this;
-	var canvas2point = function(x, y) {
+	var canvas2point = this.canvas2point = function(x, y) {
 		return v(x / self.scale, 480 - y / self.scale);
+	};
+
+	this.point2canvas = function(point) {
+			return v(point.x * self.scale, (480 - point.y) * self.scale);
+	};
+
+	this.canvas.onmousemove = function(e) {
+		self.mouse = canvas2point(e.clientX, e.clientY);
 	};
 
 	this.canvas.onmousedown = function(e) {
@@ -67,35 +73,39 @@ Demo.prototype.update = function(dt) {
 };
 
 Demo.prototype.drawInfo = function() {
+	var maxWidth = this.width - 20;
+
 	this.ctx.fillStyle = "black";
 	//this.ctx.fillText(this.ctx.font, 100, 100);
 	var fpsStr = Math.floor(this.fps * 10) / 10;
 	if (this.space.activeShapes.count === 0) {
 		fpsStr = '--';
 	}
-	this.ctx.fillText("FPS: " + fpsStr, 10, 50);
+	this.ctx.fillText("FPS: " + fpsStr, 10, 50, maxWidth);
 
-	this.ctx.fillText("Step: " + this.space.stamp, 10, 80);
+	this.ctx.fillText("Step: " + this.space.stamp, 10, 80, maxWidth);
+
+
+	if (this.message) {
+		this.ctx.fillText(this.message, 10, this.height - 50, maxWidth);
+	}
 }
 
 Demo.prototype.draw = function() {
 	var ctx = this.ctx;
 
 	var self = this;
-	var point2canvas = function(point) {
-			return v(point.x * self.scale, (480 - point.y) * self.scale);
-	};
 
 	// Draw shapes
 	ctx.strokeStyle = 'black';
 	ctx.clearRect(0, 0, this.width, this.height);
 
-	this.ctx.font = "25px sans-serif";
+	this.ctx.font = "16px sans-serif";
 	this.ctx.lineCap = 'round';
 
 	this.space.eachShape(function(shape) {
 		ctx.fillStyle = shape.style();
-		shape.draw(ctx, self.scale, point2canvas);
+		shape.draw(ctx, self.scale, self.point2canvas);
 	});
 
 	// Draw collisions
@@ -106,7 +116,7 @@ Demo.prototype.draw = function() {
 	for (var i = 0; i < arbiters.length; i++) {
 		var contacts = arbiters[i].contacts;
 		for (var j = 0; j < contacts.length; j++) {
-			var p = point2canvas(contacts[j].p);
+			var p = this.point2canvas(contacts[j].p);
 
 			ctx.beginPath()
 			ctx.moveTo(p.x - 2, p.y - 2);

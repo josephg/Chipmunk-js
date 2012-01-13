@@ -589,31 +589,6 @@ var bbMergedArea2 = function(bb, l, b, r, t)
 	return (max(bb.r, r) - min(bb.l, l))*(max(bb.t, t) - min(bb.b, b));
 };
 
-/// Returns the fraction along the segment query the cpBB is hit. Returns Infinity if it doesn't hit.
-var bbSegmentQuery = function(bb, a, b)
-{
-	var idx = 1/(b.x - a.x);
-	var tx1 = (bb.bb_l == a.x ? -Infinity : (bb.bb_l - a.x)*idx);
-	var tx2 = (bb.bb_r == a.x ?  Infinity : (bb.bb_r - a.x)*idx);
-	var txmin = min(tx1, tx2);
-	var txmax = max(tx1, tx2);
-	
-	var idy = 1/(b.y - a.y);
-	var ty1 = (bb.bb_b == a.y ? -Infinity : (bb.bb_b - a.y)*idy);
-	var ty2 = (bb.bb_t == a.y ?  Infinity : (bb.bb_t - a.y)*idy);
-	var tymin = min(ty1, ty2);
-	var tymax = max(ty1, ty2);
-	
-	if(tymin <= txmax && txmin <= tymax){
-		var min_ = max(txmin, tymin);
-		var max_ = min(txmax, tymax);
-		
-		if(0.0 <= max_ && min_ <= 1.0) return max(min_, 0.0);
-	}
-	
-	return Infinity;
-};
-
 /// Return true if the bounding box intersects the line segment with ends @c a and @c b.
 var bbIntersectsSegment = function(bb, a, b)
 {
@@ -677,8 +652,8 @@ typedef struct cpSegmentQueryInfo {
 
 var shapeIDCounter = 0;
 
-var CP_NO_GROUP = 0;
-var CP_ALL_LAYERS = ~0;
+var CP_NO_GROUP = exports.NO_GROUP = 0;
+var CP_ALL_LAYERS = exports.ALL_LAYERS = ~0;
 
 exports.resetShapeIdCounter = function()
 {
@@ -750,6 +725,11 @@ Shape.prototype.update = function(pos, rot)
 	this.cacheData(pos, rot);
 };
 
+Shape.prototype.getBB = function()
+{
+	return new BB(this.bb_l, this.bb_b, this.bb_r, this.bb_t);
+};
+
 /* Not implemented - all these getters and setters. Just edit the object directly.
 CP_DefineShapeStructGetter(cpBody*, body, Body);
 void cpShapeSetBody(cpShape *shape, cpBody *body);
@@ -782,6 +762,18 @@ var SegmentQueryInfo = function(shape, t, n){
 	this.t = t;
 	/// The normal of the surface hit.
 	this.n = n;
+};
+
+/// Get the hit point for a segment query.
+SegmentQueryInfo.prototype.hitPoint = function(start, end)
+{
+	return vlerp(start, end, this.t);
+};
+
+/// Get the hit distance for a segment query.
+SegmentQueryInfo.prototype.hitDist = function(start, end)
+{
+	return vdist(start, end) * this.t;
 };
 
 // Circles.
@@ -820,7 +812,7 @@ CircleShape.prototype.pointQuery = function(p)
 	if(distsq < r*r){
 		var info = new PointQueryExtendedInfo(this);
 		
-		var dist = fsqrt(distsq);
+		var dist = Math.sqrt(distsq);
 		info.d = r - dist;
 		info.n = vmult(delta, 1/dist);
 		return info;
@@ -927,7 +919,7 @@ SegmentShape.prototype.pointQuery = function(p)
 	var b = this.tb;
 	
 	var seg_delta = vsub(b, a);
-	var closest_t = fclamp01(vdot(seg_delta, vsub(p, a))/vlengthsq(seg_delta));
+	var closest_t = clamp01(vdot(seg_delta, vsub(p, a))/vlengthsq(seg_delta));
 	var closest = vadd(a, vmult(seg_delta, closest_t));
 
 	var delta = vsub(p, closest);
@@ -963,11 +955,7 @@ SegmentShape.prototype.segmentQuery = function(a, b)
 		var bd = vdot(delta, n) - d_offset;
 		
 		if(ad*bd < 0){
-			return {
-				shape: this,
-				t: ad/(ad - bd),
-				n: flipped_n
-			};
+			return new SegmentQueryInfo(this, ad/(ad - bd), flipped_n);
 		}
 	} else if(r != 0){
 		var info1 = circleSegmentQuery(this, this.ta, this.r, a, b);
@@ -1006,18 +994,6 @@ CP_DeclareShapeGetter(cpSegmentShape, cpVect, B);
 CP_DeclareShapeGetter(cpSegmentShape, cpVect, Normal);
 CP_DeclareShapeGetter(cpSegmentShape, cpFloat, Radius);
 */
-
-/// Get the hit point for a segment query.
-exports.segmentQueryHitPoint = function(start, end, info)
-{
-	return vlerp(start, end, info.t);
-};
-
-/// Get the hit distance for a segment query.
-exports.segmentQueryHitDist = function(start, end, info)
-{
-	return vdist(start, end)*info.t;
-};
 
 /* Copyright (c) 2007 Scott Lembcke
  * 
@@ -2053,7 +2029,6 @@ var bbProximity = function(a, b)
 
 var subtreeInsert = function(subtree, leaf, tree)
 {
-	
 //	var s = new Error().stack;
 //	traces[s] = traces[s] ? traces[s]+1 : 1;
 
@@ -2086,9 +2061,9 @@ var subtreeInsert = function(subtree, leaf, tree)
 	}
 };
 
-Node.prototype.intersectsBB = Leaf.prototype.intersectsBB = function(node, bb)
+Node.prototype.intersectsBB = Leaf.prototype.intersectsBB = function(bb)
 {
-	return (node.bb_l <= bb.r && bb.l <= node.bb_r && node.bb_b <= bb.t && bb.b <= node.bb_t);
+	return (this.bb_l <= bb.r && bb.l <= this.bb_r && this.bb_b <= bb.t && bb.b <= this.bb_t);
 };
 
 var subtreeQuery = function(subtree, bb, func)
@@ -2104,13 +2079,38 @@ var subtreeQuery = function(subtree, bb, func)
 	}
 };
 
+/// Returns the fraction along the segment query the node hits. Returns Infinity if it doesn't hit.
+var nodeSegmentQuery = function(node, a, b)
+{
+	var idx = 1/(b.x - a.x);
+	var tx1 = (node.bb_l == a.x ? -Infinity : (node.bb_l - a.x)*idx);
+	var tx2 = (node.bb_r == a.x ?  Infinity : (node.bb_r - a.x)*idx);
+	var txmin = min(tx1, tx2);
+	var txmax = max(tx1, tx2);
+	
+	var idy = 1/(b.y - a.y);
+	var ty1 = (node.bb_b == a.y ? -Infinity : (node.bb_b - a.y)*idy);
+	var ty2 = (node.bb_t == a.y ?  Infinity : (node.bb_t - a.y)*idy);
+	var tymin = min(ty1, ty2);
+	var tymax = max(ty1, ty2);
+	
+	if(tymin <= txmax && txmin <= tymax){
+		var min_ = max(txmin, tymin);
+		var max_ = min(txmax, tymax);
+		
+		if(0.0 <= max_ && min_ <= 1.0) return max(min_, 0.0);
+	}
+	
+	return Infinity;
+};
+
 var subtreeSegmentQuery = function(subtree, a, b, t_exit, func)
 {
 	if(subtree.isLeaf){
 		return func(subtree.obj);
 	} else {
-		var t_a = bbSegmentQuery(subtree.A, a, b);
-		var t_b = bbSegmentQuery(subtree.B, a, b);
+		var t_a = nodeSegmentQuery(subtree.A, a, b);
+		var t_b = nodeSegmentQuery(subtree.B, a, b);
 		
 		if(t_a < t_b){
 			if(t_a < t_exit) t_exit = min(t_exit, subtreeSegmentQuery(subtree.A, a, b, t_exit, func));
@@ -4199,7 +4199,8 @@ Space.prototype.segmentQuery = function(start, end, layers, group, func)
 	} this.unlock(true);
 };
 
-/// Perform a directed line segment query (like a raycast) against the space and return the first shape hit. Returns null if no shapes were hit.
+/// Perform a directed line segment query (like a raycast) against the space and return the first shape hit.
+/// Returns null if no shapes were hit.
 Space.prototype.segmentQueryFirst = function(start, end, layers, group)
 {
 	var out = new SegmentQueryInfo(null, 1, vzero);
