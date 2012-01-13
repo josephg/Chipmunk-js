@@ -184,6 +184,7 @@ var momentForBox2 = exports.momentForBox2 = function(m, box)
 	height = box.t - box.b;
 	offset = vmult([box.l + box.r, box.b + box.t], 0.5);
 	
+	// TODO NaN when offset is 0 and m is INFINITY	
 	return momentForBox(m, width, height) + m*vlengthsq(offset);
 };
 
@@ -704,7 +705,8 @@ Shape.prototype.setLayers = function(layers) { this.body.activate(); this.layers
 
 Shape.prototype.active = function()
 {
-	return this.prev || (this.body.shapeList.length > 0 && this.body.shapeList[0] === this);
+// return shape->prev || shape->body->shapeList == shape;
+	return this.body && this.body.shapeList.indexOf(this) !== -1;
 };
 
 Shape.prototype.setBody = function(body)
@@ -4008,72 +4010,84 @@ var componentActive = function(root, threshold)
 
 Space.prototype.processComponents = function(dt)
 {
-	var dv = this.idleSpeedThreshold;
-	var dvsq = (dv ? dv*dv : vlengthsq(this.gravity)*dt*dt);
-	
-	// update idling and reset component nodes
+	var sleep = (this.sleepTimeThreshold !== Infinity);
 	var bodies = this.bodies;
+
+	// This can be removed if we have debugging turned off.
 	for(var i=0; i<bodies.length; i++){
 		var body = bodies[i];
-		
-		// Need to deal with infinite mass objects
-		var keThreshold = (dvsq ? body.m*dvsq : 0);
-		body.nodeIdleTime = (body.kineticEnergy() > keThreshold ? 0 : body.nodeIdleTime + dt);
 		
 		assertSoft(body.nodeNext === null, "Internal Error: Dangling next pointer detected in contact graph.");
 		assertSoft(body.nodeRoot === null, "Internal Error: Dangling root pointer detected in contact graph.");
 	}
+
+	if(sleep){
+		var dv = this.idleSpeedThreshold;
+		var dvsq = (dv ? dv*dv : vlengthsq(this.gravity)*dt*dt);
 	
+		for(var i=0; i<bodies.length; i++){
+			var body = bodies[i];
+
+			// Need to deal with infinite mass objects
+			var keThreshold = (dvsq ? body.m*dvsq : 0);
+			body.nodeIdleTime = (body.kineticEnergy() > keThreshold ? 0 : body.nodeIdleTime + dt);
+		}
+	}
+
 	// Awaken any sleeping bodies found and then push arbiters to the bodies' lists.
 	var arbiters = this.arbiters;
 	for(var i=0, count=arbiters.length; i<count; i++){
 		var arb = arbiters[i];
 		var a = arb.body_a, b = arb.body_b;
-		
-		if((b.isRogue() && !b.isStatic()) || a.isSleeping()) a.activate();
-		if((a.isRogue() && !a.isStatic()) || b.isSleeping()) b.activate();
+	
+		if(sleep){	
+			if((b.isRogue() && !b.isStatic()) || a.isSleeping()) a.activate();
+			if((a.isRogue() && !a.isStatic()) || b.isSleeping()) b.activate();
+		}
 		
 		a.pushArbiter(arb);
 		b.pushArbiter(arb);
 	}
 	
-	// Bodies should be held active if connected by a joint to a non-static rouge body.
-	var constraints = this.constraints;
-	for(var i=0; i<constraints.length; i++){
-		var constraint = constraints[i];
-		var a = constraint.a, b = constraint.b;
-		
-		if(b.isRogue() && !b.isStatic()) a.activate();
-		if(a.isRogue() && !a.isStatic()) b.activate();
-	}
-	
-	// Generate components and deactivate sleeping ones
-	for(var i=0; i<bodies.length;){
-		var body = bodies[i];
-		
-		if(componentRoot(body) === null){
-			// Body not in a component yet. Perform a DFS to flood fill mark 
-			// the component in the contact graph using this body as the root.
-			floodFillComponent(body, body);
+	if(sleep){
+		// Bodies should be held active if connected by a joint to a non-static rouge body.
+		var constraints = this.constraints;
+		for(var i=0; i<constraints.length; i++){
+			var constraint = constraints[i];
+			var a = constraint.a, b = constraint.b;
 			
-			// Check if the component should be put to sleep.
-			if(!componentActive(body, this.sleepTimeThreshold)){
-				this.sleepingComponents.push(body);
-				for(var other = body; other; other = other.nodeNext){
-					this.deactivateBody(other);
-				}
-				
-				// cpSpaceDeactivateBody() removed the current body from the list.
-				// Skip incrementing the index counter.
-				continue;
-			}
+			if(b.isRogue() && !b.isStatic()) a.activate();
+			if(a.isRogue() && !a.isStatic()) b.activate();
 		}
 		
-		i++;
-		
-		// Only sleeping bodies retain their component node pointers.
-		body.nodeRoot = null;
-		body.nodeNext = null;
+		// Generate components and deactivate sleeping ones
+		for(var i=0; i<bodies.length;){
+			var body = bodies[i];
+			
+			if(componentRoot(body) === null){
+				// Body not in a component yet. Perform a DFS to flood fill mark 
+				// the component in the contact graph using this body as the root.
+				floodFillComponent(body, body);
+				
+				// Check if the component should be put to sleep.
+				if(!componentActive(body, this.sleepTimeThreshold)){
+					this.sleepingComponents.push(body);
+					for(var other = body; other; other = other.nodeNext){
+						this.deactivateBody(other);
+					}
+					
+					// cpSpaceDeactivateBody() removed the current body from the list.
+					// Skip incrementing the index counter.
+					continue;
+				}
+			}
+			
+			i++;
+			
+			// Only sleeping bodies retain their component node pointers.
+			body.nodeRoot = null;
+			body.nodeNext = null;
+		}
 	}
 };
 
@@ -4592,7 +4606,7 @@ Space.prototype.step = function(dt)
 	var constraints = this.constraints;
 	var arbiters = this.arbiters;
 	
-	// Reset and empty the arbiter list.
+	// Reset and empty the arbiter lists.
 	for(var i=0; i<arbiters.length; i++){
 		var arb = arbiters[i];
 		arb.state = 'normal';
@@ -4617,10 +4631,8 @@ Space.prototype.step = function(dt)
 		this.activeShapes.reindexQuery(this.collideShapes);
 	} this.unlock(false);
 	
-	// If body sleeping is enabled, do that now.
-	if(this.sleepTimeThreshold != Infinity || this.enableContactGraph){
-		this.processComponents(dt);
-	}
+	// Rebuild the contact graph (and detect sleeping components if sleeping is enabled)
+	this.processComponents(dt);
 	
 	this.lock(); {
 		// Clear out old cached arbiters and call separate callbacks
