@@ -4203,7 +4203,7 @@ Space.prototype.segmentQuery = function(start, end, layers, group, func)
 /// Returns null if no shapes were hit.
 Space.prototype.segmentQueryFirst = function(start, end, layers, group)
 {
-	var out = new SegmentQueryInfo(null, 1, vzero);
+	var out = null;
 
 	var helper = function(shape){
 		var info;
@@ -4212,7 +4212,7 @@ Space.prototype.segmentQueryFirst = function(start, end, layers, group)
 			!(shape.group && group === shape.group) && (layers & shape.layers) &&
 			!shape.sensor &&
 			(info = shape.segmentQuery(start, end)) &&
-			info.t < out.t
+			(out === null || info.t < out.t)
 		){
 			out = info;
 		}

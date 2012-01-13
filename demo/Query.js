@@ -1,3 +1,7 @@
+// This code demonstrates making point and segment queries in a space.
+//
+// Take a look at update(), below for the calls to space.*Query.
+
 var Query = function() {
 	Demo.call(this);
 
@@ -91,7 +95,7 @@ Query.prototype.draw = function() {
 	this.message = "Query: Dist(" + Math.floor(v.dist(start, end)) + ") Point " + v.str(end) + ", ";
 
 	var info = this.space.segmentQueryFirst(start, end, cp.ALL_LAYERS, cp.NO_GROUP);
-	if(info.shape) {
+	if(info) {
 		var point = info.hitPoint(start, end);
 
 		// Draw red over the occluded part of the query
@@ -113,6 +117,8 @@ Query.prototype.draw = function() {
 	var mouseShape = this.space.pointQueryFirst(this.mouse, cp.ALL_LAYERS, cp.NO_GROUP);
 	if(mouseShape) this.drawBB(mouseShape.getBB(), null, 'red');
 };
+
+Query.prototype.update = function(){};
 
 addDemo('Query', Query);
 
