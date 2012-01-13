@@ -47,6 +47,7 @@ var Balls = function() {
 	var ramp = space.addShape(new cp.SegmentShape(space.staticBody, v(100, 100), v(300, 200), 10));
 	ramp.setElasticity(1);
 	ramp.setFriction(1);
+	ramp.setLayers(NOT_GRABABLE_MASK);
 };
 
 Balls.prototype = Object.create(Demo.prototype);

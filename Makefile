@@ -19,7 +19,8 @@ js = chipmunk.js \
 
 constraints = \
 		util.js \
-		cpConstraint.js
+		cpConstraint.js \
+		cpPivotJoint.js
 
 demos = demo.js \
 		ball.js \

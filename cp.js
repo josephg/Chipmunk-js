@@ -1460,7 +1460,7 @@ Body.prototype.removeShape = function(shape)
 
 var filterConstraints = function(node, body, filter)
 {
-	if(node == filter){
+	if(node === filter){
 		return node.next(body);
 	} else if(node.a === body){
 		node.next_a = filterConstraints(node.next_a, body, filter);
@@ -3659,7 +3659,7 @@ Space.prototype.removeBody = function(body)
 /// Remove a constraint from the simulation.
 Space.prototype.removeConstraint = function(constraint)
 {
-	assert(space.containsConstraint(constraint),
+	assert(this.containsConstraint(constraint),
 		"Cannot remove a constraint that was not added to the space. (Removed twice maybe?)");
 	assertSpaceUnlocked(this);
 	
@@ -4808,8 +4808,8 @@ var k_scalar = function(a, b, r1, r2, n)
 	return value;
 };
 
-// Returns [k1, k2].
-var k_tensor = function(a, b, r1, r2)
+// k1 and k2 are modified by the function to contain the outputs.
+var k_tensor = function(a, b, r1, r2, k1, k2)
 {
 	// calculate mass matrix
 	// If I wasn't lazy and wrote a proper matrix class, this wouldn't be so gross...
@@ -4818,7 +4818,7 @@ var k_tensor = function(a, b, r1, r2)
 	
 	// start with I*m_sum
 	k11 = m_sum; k12 = 0;
-	k21 = 0;  k22 = m_sum;
+	k21 = 0;     k22 = m_sum;
 	
 	// add the influence from r1
 	var a_i_inv = a.i_inv;
@@ -4841,7 +4841,9 @@ var k_tensor = function(a, b, r1, r2)
 	assertSoft(determinant !== 0, "Unsolvable constraint.");
 	
 	var det_inv = 1/determinant;
-  return [new Vect(k22*det_inv, -k12*det_inv), new Vect(-k21*det_inv,  k11*det_inv)];
+
+	k1.x =  k22*det_inv; k1.y = -k12*det_inv;
+	k2.x = -k21*det_inv; k2.y =  k11*det_inv;
 };
 
 var mult_k = function(vr, k1, k2)
@@ -4885,7 +4887,7 @@ var Constraint = exports.Constraint = function(a, b)
 	/// The second body connected to this constraint.
 	this.b = b;
 	
-  this.space = null;
+	this.space = null;
 
 	this.next_a = null;
 	this.next_b = null;
@@ -4895,7 +4897,7 @@ var Constraint = exports.Constraint = function(a, b)
 	/// The rate at which joint error is corrected.
 	/// Defaults to pow(1 - 0.1, 60) meaning that it will
 	/// correct 10% of the error every 1/60th of a second.
-	this.errorBias = fpow(1 - 0.1, 60);
+	this.errorBias = Math.pow(1 - 0.1, 60);
 	/// The maximum rate at which joint error is corrected.
 	this.maxBias = Infinity;
 };
@@ -4921,4 +4923,107 @@ Constraint.prototype.preSolve = function(space) {};
 /// to customize the constraint.
 /// Use the applied impulse to perform effects like breakable joints.
 Constraint.prototype.postSolve = function(space) {};
+
+Constraint.prototype.next = function(body)
+{
+	return (this.a === body ? this.next_a : this.next_b);
+};
+
+/* Copyright (c) 2007 Scott Lembcke
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+// Pivot joints can also be created with (a, b, pivot);
+var PivotJoint = exports.PivotJoint = function(a, b, anchr1, anchr2)
+{
+	Constraint.call(this, a, b);
+	
+	if(typeof anchr2 === 'undefined') {
+		var pivot = anchr1;
+
+		anchr1 = (a ? a.world2Local(pivot) : pivot);
+		anchr2 = (b ? b.world2Local(pivot) : pivot);
+	}
+
+	this.anchr1 = anchr1;
+	this.anchr2 = anchr2;
+
+	this.r1 = this.r2 = vzero;
+	
+	this.k1 = new Vect(0,0); this.k2 = new Vect(0,0);
+
+	this.jAcc = vzero;
+
+	this.jMaxLen = 0;
+	this.bias = vzero;
+};
+
+PivotJoint.prototype = Object.create(Constraint.prototype);
+
+PivotJoint.prototype.preStep = function(dt)
+{
+	var a = this.a;
+	var b = this.b;
+	
+	this.r1 = vrotate(this.anchr1, a.rot);
+	this.r2 = vrotate(this.anchr2, b.rot);
+	
+	// Calculate mass tensor. Result is stored into this.k1 & this.k2.
+	k_tensor(a, b, this.r1, this.r2, this.k1, this.k2);
+	
+	// compute max impulse
+	this.jMaxLen = this.maxForce * dt;
+	
+	// calculate bias velocity
+	var delta = vsub(vadd(b.p, this.r2), vadd(a.p, this.r1));
+	this.bias = vclamp(vmult(delta, -bias_coef(this.errorBias, dt)/dt), this.maxBias);
+};
+
+PivotJoint.prototype.applyCachedImpulse = function(dt_coef)
+{
+	apply_impulses(this.a, this.b, this.r1, this.r2, this.jAcc.x * dt_coef, this.jAcc.y * dt_coef);
+};
+
+PivotJoint.prototype.applyImpulse = function()
+{
+	var a = this.a;
+	var b = this.b;
+	
+	var r1 = this.r1;
+	var r2 = this.r2;
+		
+	// compute relative velocity
+	var vr = relative_velocity(a, b, r1, r2);
+	
+	// compute normal impulse
+	var j = mult_k(vsub(this.bias, vr), this.k1, this.k2);
+	var jOld = this.jAcc;
+	this.jAcc = vclamp(vadd(this.jAcc, j), this.jMaxLen);
+	
+	// apply impulse
+	apply_impulses(a, b, this.r1, this.r2, this.jAcc.x - jOld.x, this.jAcc.y - jOld.y);
+};
+
+PivotJoint.prototype.getImpulse = function()
+{
+	return vlength(this.jAcc);
+};
+
 })();

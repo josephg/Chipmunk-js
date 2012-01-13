@@ -1,6 +1,12 @@
+// This is the utility code to drive the chipmunk demos. The demos are rendered using
+// a single canvas on the page.
+
 var v = cp.v;
 
 var ctx;
+
+var GRABABLE_MASK_BIT = 1<<31;
+var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
 var Demo = function() {
 	var space = this.space = new cp.Space();
@@ -8,7 +14,6 @@ var Demo = function() {
 	this.fps = 0;
 	this.mouse = v(0,0);
 
-	// HACK HACK HACK - this shouldn't be here.
 	var self = this;
 	var canvas2point = this.canvas2point = function(x, y) {
 		return v(x / self.scale, 480 - y / self.scale);
@@ -18,10 +23,13 @@ var Demo = function() {
 			return v(point.x * self.scale, (480 - point.y) * self.scale);
 	};
 
+	// HACK HACK HACK - its awful having this here, and its going to break when we
+	// have multiple demos open at the same time.
 	this.canvas.onmousemove = function(e) {
 		self.mouse = canvas2point(e.clientX, e.clientY);
 	};
 
+	/*
 	this.canvas.onmousedown = function(e) {
 		radius = 10;
 		mass = 3;
@@ -30,7 +38,39 @@ var Demo = function() {
 		circle = space.addShape(new cp.CircleShape(body, radius, v(0, 0)));
 		circle.setElasticity(0.5);
 		return circle.setFriction(1);
+	};*/
+
+	var mouseBody = this.mouseBody = new cp.Body(Infinity, Infinity);
+
+	this.canvas.onmousedown = function(e) {
+		var rightclick = e.which === 3; // or e.button === 2;
+
+		if(!rightclick) {
+			var point = canvas2point(e.clientX, e.clientY);
+		
+			var shape = space.pointQueryFirst(point, GRABABLE_MASK_BIT, cp.NO_GROUP);
+			if(shape){
+				var body = shape.body;
+				var mouseJoint = self.mouseJoint = new cp.PivotJoint(mouseBody, body, v(0,0), body.world2Local(point));
+
+				mouseJoint.maxForce = 50000;
+				mouseJoint.errorBias = Math.pow(1 - 0.15, 60);
+				space.addConstraint(mouseJoint);
+			}
+		}
 	};
+
+	this.canvas.onmouseup = function(e) {
+		var rightclick = e.which === 3; // or e.button === 2;
+
+		if(!rightclick) {
+			if(self.mouseJoint) {
+				space.removeConstraint(self.mouseJoint);
+				self.mouseJoint = null;
+			}
+		}
+	};
+
 };
 
 var canvas = Demo.prototype.canvas = document.getElementsByTagName('canvas')[0];
@@ -141,6 +181,14 @@ Demo.prototype.draw = function() {
 		}
 	}
 
+	if (this.mouseJoint) {
+		ctx.beginPath();
+		var c = this.point2canvas(this.mouseBody.p);
+		ctx.arc(c.x, c.y, this.scale * 5, 0, 2*Math.PI, false);
+		ctx.fill();
+		ctx.stroke();
+	}
+
 	this.drawInfo();
 };
 
@@ -169,10 +217,17 @@ Demo.prototype.step = function() {
 	var dt = (now - this.lastStep) / 1000;
 	this.lastStep = now;
 
+	// Update FPS
 	if(dt > 0) {
 		this.fps = 0.7*this.fps + 0.3*(1/dt);
 	}
-	//this.fps = 1/dt;
+
+	// Move mouse body toward the mouse
+	var newPoint = v.lerp(this.mouseBody.p, this.mouse, 0.25);
+	this.mouseBody.v = v.mult(v.sub(newPoint, this.mouseBody.p), 60);
+	this.mouseBody.p = newPoint;
+
+	var lastNumActiveShapes = this.space.activeShapes.count;
 
 	// Limit the amount of time thats passed to 0.1 - if the user switches tabs or
 	// has a slow computer, we'll just slow the simulation down.
@@ -180,7 +235,6 @@ Demo.prototype.step = function() {
 
 	this.remainder += dt;
 
-	var lastNumActiveShapes = this.space.activeShapes.count;
 	while(this.remainder > 1/60) {
 		// Chipmunk works better with a constant framerate, because it can cache some results.
 		this.remainder -= 1/60;
@@ -199,6 +253,7 @@ Demo.prototype.addFloor = function() {
 	var floor = space.addShape(new cp.SegmentShape(space.staticBody, v(0, 0), v(640, 0), 0));
 	floor.setElasticity(1);
 	floor.setFriction(1);
+	floor.setLayers(NOT_GRABABLE_MASK);
 };
 
 Demo.prototype.addWalls = function() {
@@ -206,9 +261,12 @@ Demo.prototype.addWalls = function() {
 	var wall1 = space.addShape(new cp.SegmentShape(space.staticBody, v(0, 0), v(0, 480), 0));
 	wall1.setElasticity(1);
 	wall1.setFriction(1);
+	wall1.setLayers(NOT_GRABABLE_MASK);
+
 	var wall2 = space.addShape(new cp.SegmentShape(space.staticBody, v(640, 0), v(640, 480), 0));
 	wall2.setElasticity(1);
 	wall2.setFriction(1);
+	wall2.setLayers(NOT_GRABABLE_MASK);
 };
 
 // **** Extras for Shapes
