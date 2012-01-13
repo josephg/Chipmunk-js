@@ -42,7 +42,11 @@ var Balls = function() {
     };
 */
 
-	ctx.strokeStyle = "black";
+	this.ctx.strokeStyle = "black";
+
+	var ramp = space.addShape(new cp.SegmentShape(space.staticBody, v(100, 100), v(300, 200), 10));
+	ramp.setElasticity(1);
+	ramp.setFriction(1);
 };
 
 Balls.prototype = Object.create(Demo.prototype);
