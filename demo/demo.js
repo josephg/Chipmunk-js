@@ -3,10 +3,12 @@ var v = function(x, y) {
   return new cp.Vect(x, y);
 };
 
+var ctx;
+
 var Demo = function() {
 	var space = this.space = new cp.Space();
 	this.remainder = 0;
-	
+	this.fps = 0;
 
 	// HACK HACK HACK - this shouldn't be here.
 	var self = this;
@@ -32,7 +34,6 @@ canvas.style.top = "0";
 canvas.style.left = "0";
 
 var ctx = Demo.prototype.ctx = canvas.getContext('2d');
-ctx.lineCap = 'round';
 
 // The physics space size is 640x480, with the origin in the bottom left.
 // Its really an arbitrary number except for the ratio - everything is done
@@ -65,6 +66,18 @@ Demo.prototype.update = function(dt) {
 	this.space.step(dt);
 };
 
+Demo.prototype.drawInfo = function() {
+	this.ctx.fillStyle = "black";
+	//this.ctx.fillText(this.ctx.font, 100, 100);
+	var fpsStr = Math.floor(this.fps * 10) / 10;
+	if (this.space.activeShapes.count === 0) {
+		fpsStr = '--';
+	}
+	this.ctx.fillText("FPS: " + fpsStr, 10, 50);
+
+	this.ctx.fillText("Step: " + this.space.stamp, 10, 80);
+}
+
 Demo.prototype.draw = function() {
 	var ctx = this.ctx;
 
@@ -76,6 +89,10 @@ Demo.prototype.draw = function() {
 	// Draw shapes
 	ctx.strokeStyle = 'black';
 	ctx.clearRect(0, 0, this.width, this.height);
+
+	this.ctx.font = "25px sans-serif";
+	this.ctx.lineCap = 'round';
+
 	this.space.eachShape(function(shape) {
 		ctx.fillStyle = shape.style();
 		shape.draw(ctx, self.scale, point2canvas);
@@ -103,6 +120,7 @@ Demo.prototype.draw = function() {
 		}
 	}
 
+	this.drawInfo();
 };
 
 
@@ -129,6 +147,11 @@ Demo.prototype.step = function() {
 	var now = Date.now();
 	var dt = (now - this.lastStep) / 1000;
 	this.lastStep = now;
+
+	if(dt > 0) {
+		this.fps = 0.7*this.fps + 0.3*(1/dt);
+	}
+	//this.fps = 1/dt;
 
 	// Limit the amount of time thats passed to 0.1 - if the user switches tabs or
 	// has a slow computer, we'll just slow the simulation down.
