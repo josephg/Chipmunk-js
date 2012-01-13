@@ -4217,11 +4217,11 @@ Space.prototype.segmentQueryFirst = function(start, end, layers, group)
 			out = info;
 		}
 		
-		return out.t;
+		return out ? out.t : 1;
 	};
 
 	this.staticShapes.segmentQuery(start, end, 1, helper);
-	this.activeShapes.segmentQuery(start, end, out.t, helper);
+	this.activeShapes.segmentQuery(start, end, out ? out.t : 1, helper);
 	
 	return out;
 };
