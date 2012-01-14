@@ -47,6 +47,9 @@ var assertSoft = function(value, message)
 {
 	if(!value && console && console.warn) {
 		console.warn("ASSERTION FAILED: " + message);
+		if(console.trace) {
+			console.trace();
+		}
 	}
 };
 
@@ -3954,13 +3957,13 @@ Body.prototype.pushArbiter = function(arb)
 	assertSoft(next === null || (next.body_a === this ? next.thread_a_prev : next.thread_b_prev) === null,
 		"Internal Error: Dangling contact graph pointers detected. (C)");
 
+	if(arb.body_a === this){
+		arb.thread_a_next = next;
+	} else {
+		arb.thread_b_next = next;
+	}
+
 	if(next){
-		if(arb.body_a === this){
-			arb.thread_a_next = next;
-		} else {
-			arb.thread_b_next = next;
-		}
-	
 		if (next.body_a === this){
 			next.thread_a_prev = arb;
 		} else {
@@ -3990,7 +3993,7 @@ var floodFillComponent = function(root, body)
 			for(var arb = body.arbiterList; arb; arb = arb.next(body)){
 				floodFillComponent(root, (body == arb.body_a ? arb.body_b : arb.body_a));
 			}
-			for(var constraint = body.constraintList; constraint; constraint = constraint.nodeNext){
+			for(var constraint = body.constraintList; constraint; constraint = constraint.next(body)){
 				floodFillComponent(root, (body == constraint.a ? constraint.b : constraint.a));
 			}
 		} else {
@@ -4013,7 +4016,7 @@ Space.prototype.processComponents = function(dt)
 	var sleep = (this.sleepTimeThreshold !== Infinity);
 	var bodies = this.bodies;
 
-	// This can be removed if we have debugging turned off.
+	// These checks can be removed at some stage (if DEBUG == undefined)
 	for(var i=0; i<bodies.length; i++){
 		var body = bodies[i];
 		
@@ -4076,7 +4079,7 @@ Space.prototype.processComponents = function(dt)
 						this.deactivateBody(other);
 					}
 					
-					// cpSpaceDeactivateBody() removed the current body from the list.
+					// deactivateBody() removed the current body from the list.
 					// Skip incrementing the index counter.
 					continue;
 				}
