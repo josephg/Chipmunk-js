@@ -45,7 +45,7 @@ var Demo = function() {
 	this.canvas.onmousedown = function(e) {
 		var rightclick = e.which === 3; // or e.button === 2;
 
-		if(!rightclick) {
+		if(!rightclick && !self.mouseJoint) {
 			var point = canvas2point(e.clientX, e.clientY);
 		
 			var shape = space.pointQueryFirst(point, GRABABLE_MASK_BIT, cp.NO_GROUP);

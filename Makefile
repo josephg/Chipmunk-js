@@ -20,6 +20,8 @@ js = chipmunk.js \
 constraints = \
 		util.js \
 		cpConstraint.js \
+		cpPinJoint.js \
+		cpSlideJoint.js \
 		cpPivotJoint.js
 
 demos = demo.js \
