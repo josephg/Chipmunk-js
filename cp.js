@@ -28,13 +28,16 @@ Object.create = Object.create || function(o) {
  
 //var VERSION = CP_VERSION_MAJOR + "." + CP_VERSION_MINOR + "." + CP_VERSION_RELEASE;
 
+var cp;
 if(typeof exports === 'undefined'){
-	var exports = {};
-}
-if(typeof window === 'object'){
-	window.cp = exports;
+	cp = {};
+} else {
+	cp = exports;
 }
 
+if(typeof window === 'object'){
+	window.cp = cp;
+}
 
 var assert = function(value, message)
 {
@@ -93,17 +96,17 @@ var deleteObjFromList = function(arr, obj)
 	}
 };
 
-var momentForCircle = exports.momentForCircle = function(m, r1, r2, offset)
+var momentForCircle = cp.momentForCircle = function(m, r1, r2, offset)
 {
 	return m*(0.5*(r1*r1 + r2*r2) + vlengthsq(offset));
 };
 
-var areaForCircle = exports.areaForCircle = function(r1, r2)
+var areaForCircle = cp.areaForCircle = function(r1, r2)
 {
 	return Math.PI*Math.abs(r1*r1 - r2*r2);
 };
 
-var momentForSegment = exports.momentForSegment = function(m, a, b)
+var momentForSegment = cp.momentForSegment = function(m, a, b)
 {
 	var length = vlength(vsub(b, a));
 	var offset = vmult(vadd(a, b), 1/2);
@@ -111,12 +114,12 @@ var momentForSegment = exports.momentForSegment = function(m, a, b)
 	return m*(length*length/12 + vlengthsq(offset));
 };
 
-var areaForSegment = exports.areaForSegment = function(a, b, r)
+var areaForSegment = cp.areaForSegment = function(a, b, r)
 {
 	return r*(Math.PI*r + 2*vdist(a, b));
 };
 
-var momentForPoly = exports.momentForPoly = function(m, verts, offset)
+var momentForPoly = cp.momentForPoly = function(m, verts, offset)
 {
 	var sum1 = 0;
 	var sum2 = 0;
@@ -137,7 +140,7 @@ var momentForPoly = exports.momentForPoly = function(m, verts, offset)
 	return (m*sum1)/(6*sum2);
 };
 
-var areaForPoly = exports.areaForPoly = function(verts)
+var areaForPoly = cp.areaForPoly = function(verts)
 {
 	throw new Error('Not updated for flat verts');
 	var area = 0;
@@ -148,7 +151,7 @@ var areaForPoly = exports.areaForPoly = function(verts)
 	return -area/2;
 };
 
-var centroidForPoly = exports.centroidForPoly = function(verts)
+var centroidForPoly = cp.centroidForPoly = function(verts)
 {
 	throw new Error('Not updated for flat verts');
 	var sum = 0;
@@ -166,7 +169,7 @@ var centroidForPoly = exports.centroidForPoly = function(verts)
 	return vmult(vsum, 1/(3*sum));
 };
 
-var recenterPoly = exports.recenterPoly = function(verts)
+var recenterPoly = cp.recenterPoly = function(verts)
 {
 	throw new Error('Not updated for flat verts');
 	var centroid = centroidForPoly(verts);
@@ -176,12 +179,12 @@ var recenterPoly = exports.recenterPoly = function(verts)
 	}
 };
 
-var momentForBox = exports.momentForBox = function(m, width, height)
+var momentForBox = cp.momentForBox = function(m, width, height)
 {
 	return m*(width*width + height*height)/12;
 };
 
-var momentForBox2 = exports.momentForBox2 = function(m, box)
+var momentForBox2 = cp.momentForBox2 = function(m, box)
 {
 	width = box.r - box.l;
 	height = box.t - box.b;
@@ -243,7 +246,7 @@ var numVects = 0;
 
 var traces = {};
 
-var Vect = exports.Vect = function(x, y)
+var Vect = cp.Vect = function(x, y)
 {
 	this.x = x;
 	this.y = y;
@@ -253,16 +256,16 @@ var Vect = exports.Vect = function(x, y)
 //	traces[s] = traces[s] ? traces[s]+1 : 1;
 };
 
-exports.v = function (x,y) { return new Vect(x, y) };
+cp.v = function (x,y) { return new Vect(x, y) };
 
-var vzero = exports.vzero = new Vect(0,0);
+var vzero = cp.vzero = new Vect(0,0);
 
 // The functions below *could* be rewritten to be instance methods on Vect. I don't
 // know how that would effect performance. For now, I'm keeping the JS similar to
 // the original C code.
 
 /// Vector dot product.
-var vdot = exports.v.dot = function(v1, v2)
+var vdot = cp.v.dot = function(v1, v2)
 {
 	return v1.x*v2.x + v1.y*v2.y;
 };
@@ -273,19 +276,19 @@ var vdot2 = function(x1, y1, x2, y2)
 };
 
 /// Returns the length of v.
-var vlength = exports.v.len = function(v)
+var vlength = cp.v.len = function(v)
 {
 	return Math.sqrt(vdot(v, v));
 };
 
 /// Check if two vectors are equal. (Be careful when comparing floating point numbers!)
-var veql = exports.v.eql = function(v1, v2)
+var veql = cp.v.eql = function(v1, v2)
 {
 	return (v1.x === v2.x && v1.y === v2.y);
 };
 
 /// Add two vectors
-var vadd = exports.v.add = function(v1, v2)
+var vadd = cp.v.add = function(v1, v2)
 {
 	return new Vect(v1.x + v2.x, v1.y + v2.y);
 };
@@ -298,7 +301,7 @@ Vect.prototype.add = function(v2)
 };
 
 /// Subtract two vectors.
-var vsub = exports.v.sub = function(v1, v2)
+var vsub = cp.v.sub = function(v1, v2)
 {
 	return new Vect(v1.x - v2.x, v1.y - v2.y);
 };
@@ -311,7 +314,7 @@ Vect.prototype.sub = function(v2)
 };
 
 /// Negate a vector.
-var vneg = exports.v.neg = function(v)
+var vneg = cp.v.neg = function(v)
 {
 	return new Vect(-v.x, -v.y);
 };
@@ -324,7 +327,7 @@ Vect.prototype.neg = function()
 };
 
 /// Scalar multiplication.
-var vmult = exports.v.mult = function(v, s)
+var vmult = cp.v.mult = function(v, s)
 {
 	return new Vect(v.x*s, v.y*s);
 };
@@ -339,7 +342,7 @@ Vect.prototype.mult = function(s)
 /// 2D vector cross product analog.
 /// The cross product of 2D vectors results in a 3D vector with only a z component.
 /// This function returns the magnitude of the z value.
-var vcross = exports.v.cross = function(v1, v2)
+var vcross = cp.v.cross = function(v1, v2)
 {
 	return v1.x*v2.y - v1.y*v2.x;
 };
@@ -350,19 +353,19 @@ var vcross2 = function(x1, y1, x2, y2)
 };
 
 /// Returns a perpendicular vector. (90 degree rotation)
-var vperp = exports.v.perp = function(v)
+var vperp = cp.v.perp = function(v)
 {
 	return new Vect(-v.y, v.x);
 };
 
 /// Returns a perpendicular vector. (-90 degree rotation)
-var vpvrperp = exports.v.pvrperp = function(v)
+var vpvrperp = cp.v.pvrperp = function(v)
 {
 	return new Vect(v.y, -v.x);
 };
 
 /// Returns the vector projection of v1 onto v2.
-var vproject = exports.v.project = function(v1, v2)
+var vproject = cp.v.project = function(v1, v2)
 {
 	return vmult(v2, vdot(v1, v2)/vlengthsq(v2));
 };
@@ -374,7 +377,7 @@ Vect.prototype.project = function(v2)
 };
 
 /// Uses complex number multiplication to rotate v1 by v2. Scaling will occur if v1 is not a unit vector.
-var vrotate = exports.v.rotate = function(v1, v2)
+var vrotate = cp.v.rotate = function(v1, v2)
 {
 	return new Vect(v1.x*v2.x - v1.y*v2.y, v1.x*v2.y + v1.y*v2.x);
 };
@@ -387,67 +390,67 @@ Vect.prototype.rotate = function(v2)
 };
 
 /// Inverse of vrotate().
-var vunrotate = exports.v.unrotate = function(v1, v2)
+var vunrotate = cp.v.unrotate = function(v1, v2)
 {
 	return new Vect(v1.x*v2.x + v1.y*v2.y, v1.y*v2.x - v1.x*v2.y);
 };
 
 /// Returns the squared length of v. Faster than vlength() when you only need to compare lengths.
-var vlengthsq = exports.v.lengthsq = function(v)
+var vlengthsq = cp.v.lengthsq = function(v)
 {
 	return vdot(v, v);
 };
 
 /// Linearly interpolate between v1 and v2.
-var vlerp = exports.v.lerp = function(v1, v2, t)
+var vlerp = cp.v.lerp = function(v1, v2, t)
 {
 	return vadd(vmult(v1, 1 - t), vmult(v2, t));
 };
 
 /// Returns a normalized copy of v.
-var vnormalize = exports.v.normalize = function(v)
+var vnormalize = cp.v.normalize = function(v)
 {
 	return vmult(v, 1/vlength(v));
 };
 
 /// Returns a normalized copy of v or vzero if v was already vzero. Protects against divide by zero errors.
-var vnormalize_safe = exports.v.normalize_safe = function(v)
+var vnormalize_safe = cp.v.normalize_safe = function(v)
 {
 	return (v.x === 0 && v.y === 0 ? vzero : vnormalize(v));
 };
 
 /// Clamp v to length len.
-var vclamp = exports.v.clamp = function(v, len)
+var vclamp = cp.v.clamp = function(v, len)
 {
 	return (vdot(v,v) > len*len) ? vmult(vnormalize(v), len) : v;
 };
 
 /// Linearly interpolate between v1 towards v2 by distance d.
-var vlerpconst = exports.v.lerpconst = function(v1, v2, d)
+var vlerpconst = cp.v.lerpconst = function(v1, v2, d)
 {
 	return vadd(v1, vclamp(vsub(v2, v1), d));
 };
 
 /// Returns the distance between v1 and v2.
-var vdist = exports.v.dist = function(v1, v2)
+var vdist = cp.v.dist = function(v1, v2)
 {
 	return vlength(vsub(v1, v2));
 };
 
 /// Returns the squared distance between v1 and v2. Faster than vdist() when you only need to compare distances.
-var vdistsq = exports.v.distsq = function(v1, v2)
+var vdistsq = cp.v.distsq = function(v1, v2)
 {
 	return vlengthsq(vsub(v1, v2));
 };
 
 /// Returns true if the distance between v1 and v2 is less than dist.
-var vnear = exports.v.near = function(v1, v2, dist)
+var vnear = cp.v.near = function(v1, v2, dist)
 {
 	return vdistsq(v1, v2) < dist*dist;
 };
 
 /// Spherical linearly interpolate between v1 and v2.
-var vslerp = exports.v.slerp = function(v1, v2, t)
+var vslerp = cp.v.slerp = function(v1, v2, t)
 {
 	var omega = Math.acos(vdot(v1, v2));
 	
@@ -460,26 +463,26 @@ var vslerp = exports.v.slerp = function(v1, v2, t)
 };
 
 /// Spherical linearly interpolate between v1 towards v2 by no more than angle a radians
-var vslerpconst = exports.v.slerpconst = function(v1, v2, a)
+var vslerpconst = cp.v.slerpconst = function(v1, v2, a)
 {
 	var angle = Math.acos(vdot(v1, v2));
 	return vslerp(v1, v2, min(a, angle)/angle);
 };
 
 /// Returns the unit length vector for the given angle (in radians).
-var vforangle = exports.v.forangle = function(a)
+var vforangle = cp.v.forangle = function(a)
 {
 	return new Vect(Math.cos(a), Math.sin(a));
 };
 
 /// Returns the angular direction v is pointing in (in radians).
-var vtoangle = exports.v.toangle = function(v)
+var vtoangle = cp.v.toangle = function(v)
 {
 	return Math.atan2(v.y, v.x);
 };
 
 ///	Returns a string representation of v. Intended mostly for debugging purposes and not production use.
-var vstr = exports.v.str = function(v)
+var vstr = cp.v.str = function(v)
 {
 	return "(" + v.x.toFixed(3) + ", " + v.y.toFixed(3) + ")";
 };
@@ -656,10 +659,10 @@ typedef struct cpSegmentQueryInfo {
 
 var shapeIDCounter = 0;
 
-var CP_NO_GROUP = exports.NO_GROUP = 0;
-var CP_ALL_LAYERS = exports.ALL_LAYERS = ~0;
+var CP_NO_GROUP = cp.NO_GROUP = 0;
+var CP_ALL_LAYERS = cp.ALL_LAYERS = ~0;
 
-exports.resetShapeIdCounter = function()
+cp.resetShapeIdCounter = function()
 {
 	shapeIDCounter = 0;
 };
@@ -668,7 +671,7 @@ exports.resetShapeIdCounter = function()
 //
 /// Opaque collision shape struct. Do not create directly - instead use
 /// PolyShape, CircleShape and SegmentShape.
-var Shape = exports.Shape = function(body) {
+var Shape = cp.Shape = function(body) {
 	/// The rigid body this collision shape is attached to.
 	this.body = body;
 
@@ -783,7 +786,7 @@ SegmentQueryInfo.prototype.hitDist = function(start, end)
 
 // Circles.
 
-var CircleShape = exports.CircleShape = function(body, radius, offset)
+var CircleShape = cp.CircleShape = function(body, radius, offset)
 {
 	this.c = this.tc = offset;
 	this.r = radius;
@@ -865,7 +868,7 @@ CircleShape.prototype.setOffset = function(offset)
 
 // Segment shape
 
-var SegmentShape = exports.SegmentShape = function(body, a, b, r)
+var SegmentShape = cp.SegmentShape = function(body, a, b, r)
 {
 	this.a = a;
 	this.b = b;
@@ -1044,7 +1047,7 @@ var polyValidate = function(verts)
 
 /// Initialize a polygon shape.
 /// The vertexes must be convex and have a clockwise winding.
-var PolyShape = exports.PolyShape = function(body, verts, offset)
+var PolyShape = cp.PolyShape = function(body, verts, offset)
 {
 	assert(verts.length >= 4, "Polygons require some verts");
 	assert(typeof(verts[0]) === 'number', 'Polygon verticies should be specified in a flattened list');
@@ -1094,7 +1097,7 @@ PolyShape.prototype.setVerts = function(verts, offset)
 };
 
 /// Initialize a box shaped polygon shape.
-var BoxShape = exports.BoxShape = function(body, width, height)
+var BoxShape = cp.BoxShape = function(body, width, height)
 {
 	var hw = width/2;
 	var hh = height/2;
@@ -1103,7 +1106,7 @@ var BoxShape = exports.BoxShape = function(body, width, height)
 };
 
 /// Initialize an offset box shaped polygon shape.
-var BoxShape2 = exports.BoxShape2 = function(body, box)
+var BoxShape2 = cp.BoxShape2 = function(body, box)
 {
 	var verts = [
 		box.l, box.b,
@@ -1298,7 +1301,7 @@ PolyShape.prototype.containsVertPartial = function(vx, vy, n)
 /// They are given a shape by creating collision shapes (cpShape) that point to the body.
 /// @{
 
-var Body = exports.Body = function(m, i) {
+var Body = cp.Body = function(m, i) {
 	/// Function that is called to update the body's velocity.
 	/// Override this to customize movement. Defaults to body.updateVelocity
 	/// body.velocity_func(gravity, damping, dt);
@@ -1715,7 +1718,7 @@ Body.prototype.kineticEnergy = function()
 	reindexQuery(func);
 */
 
-var SpatialIndex = exports.SpatialIndex = function(staticIndex)
+var SpatialIndex = cp.SpatialIndex = function(staticIndex)
 {
 	this.staticIndex = staticIndex;
 	
@@ -1761,7 +1764,7 @@ SpatialIndex.prototype.collideStatic = function(staticIndex, func)
 
 // This file implements a modified AABB tree for collision detection.
 
-var BBTree = exports.BBTree = function(staticIndex)
+var BBTree = cp.BBTree = function(staticIndex)
 {
 	SpatialIndex.call(this, staticIndex);
 	
@@ -2588,7 +2591,7 @@ bbTreeRenderDebug(cpSpatialIndex *index){
 //
 // Collision handlers are user-defined objects to describe the behaviour of colliding
 // objects.
-var CollisionHandler = exports.CollisionHandler = function()
+var CollisionHandler = cp.CollisionHandler = function()
 {
 	// The collision type
 	this.a = this.b = 0;
@@ -3348,7 +3351,7 @@ PolyShape.prototype.collisionTable = [
 	poly2poly
 ];
 
-var collideShapes = exports.collideShapes = function(a, b)
+var collideShapes = cp.collideShapes = function(a, b)
 {
 	assert(a.collisionCode <= b.collisionCode, 'Collided shapes must be sorted by type');
 	return a.collisionTable[b.collisionCode](a, b);
@@ -3378,7 +3381,7 @@ var collideShapes = exports.collideShapes = function(a, b)
 var defaultCollisionHandler = new CollisionHandler();
 
 /// Basic Unit of Simulation in Chipmunk
-var Space = exports.Space = function() {
+var Space = cp.Space = function() {
 	this.stamp = 0;
 	this.curr_dt = 0;
 
@@ -4883,7 +4886,7 @@ var bias_coef = function(errorBias, dt)
 // TODO: Comment me!
 
 // a and b are bodies that the constraint applies to.
-var Constraint = exports.Constraint = function(a, b)
+var Constraint = cp.Constraint = function(a, b)
 {
 	/// The first body connected to this constraint.
 	this.a = a;
@@ -4953,7 +4956,7 @@ Constraint.prototype.next = function(body)
  * SOFTWARE.
  */
 
-var PinJoint = exports.PinJoint = function(a, b, anchr1, anchr2)
+var PinJoint = cp.PinJoint = function(a, b, anchr1, anchr2)
 {
 	Constraint.call(this, a, b);
 	
@@ -5051,7 +5054,7 @@ PinJoint.prototype.getImpulse = function()
  * SOFTWARE.
  */
 
-var SlideJoint = exports.SlideJoint = function(a, b, anchr1, anchr2, min, max)
+var SlideJoint = cp.SlideJoint = function(a, b, anchr1, anchr2, min, max)
 {
 	Constraint.call(this, a, b);
 	
@@ -5160,7 +5163,7 @@ SlideJoint.prototype.getImpulse = function()
  */
 
 // Pivot joints can also be created with (a, b, pivot);
-var PivotJoint = exports.PivotJoint = function(a, b, anchr1, anchr2)
+var PivotJoint = cp.PivotJoint = function(a, b, anchr1, anchr2)
 {
 	Constraint.call(this, a, b);
 	
@@ -5256,7 +5259,7 @@ PivotJoint.prototype.getImpulse = function()
  * SOFTWARE.
  */
 
-var GrooveJoint = exports.GrooveJoint = function(a, b, groove_a, groove_b, anchr2)
+var GrooveJoint = cp.GrooveJoint = function(a, b, groove_a, groove_b, anchr2)
 {
 	Constraint.call(this, a, b);
 	
@@ -5396,7 +5399,7 @@ var defaultSpringForce = function(spring, dist){
 	return (spring.restLength - dist)*spring.stiffness;
 };
 
-var DampedSpring = exports.DampedSpring = function(a, b, anchr1, anchr2, restLength, stiffness, damping)
+var DampedSpring = cp.DampedSpring = function(a, b, anchr1, anchr2, restLength, stiffness, damping)
 {
 	Constraint.call(this, a, b);
 	
@@ -5493,7 +5496,7 @@ var defaultSpringTorque = function(spring, relativeAngle){
 	return (relativeAngle - spring.restAngle)*spring.stiffness;
 }
 
-var DampedRotarySpring = exports.DampedRotarySpring = function(a, b, restAngle, stiffness, damping)
+var DampedRotarySpring = cp.DampedRotarySpring = function(a, b, restAngle, stiffness, damping)
 {
 	Constraint.call(this, a, b);
 	
@@ -5571,7 +5574,7 @@ DampedRotarySpring.prototype.applyImpulse = function()
  * SOFTWARE.
  */
 
-var RotaryLimitJoint = exports.RotaryLimitJoint = function(a, b, min, max)
+var RotaryLimitJoint = cp.RotaryLimitJoint = function(a, b, min, max)
 {
 	Constraint.call(this, a, b);
 	
@@ -5673,7 +5676,7 @@ RotaryLimitJoint.prototype.getImpulse = function()
  * SOFTWARE.
  */
 
-var RatchetJoint = exports.RatchetJoint = function(a, b, phase, ratchet)
+var RatchetJoint = cp.RatchetJoint = function(a, b, phase, ratchet)
 {
 	Constraint.call(this, a, b);
 
@@ -5780,7 +5783,7 @@ RatchetJoint.prototype.getImpulse = function(joint)
  * SOFTWARE.
  */
 
-var GearJoint = exports.GearJoint = function(a, b, phase, ratio)
+var GearJoint = cp.GearJoint = function(a, b, phase, ratio)
 {
 	Constraint.call(this, a, b);
 	
@@ -5873,7 +5876,7 @@ GearJoint.prototype.setRatio = function(value)
  * SOFTWARE.
  */
 
-var SimpleMotor = exports.SimpleMotor = function(a, b, rate)
+var SimpleMotor = cp.SimpleMotor = function(a, b, rate)
 {
 	Constraint.call(this, a, b);
 	
