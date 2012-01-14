@@ -23,7 +23,8 @@ constraints = \
 		cpPinJoint.js \
 		cpSlideJoint.js \
 		cpPivotJoint.js \
-		cpGrooveJoint.js
+		cpGrooveJoint.js \
+		cpDampedSpring.js 
 
 demos = demo.js \
 		ball.js \

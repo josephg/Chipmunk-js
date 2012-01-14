@@ -169,7 +169,8 @@ var Joints = function() {
 	boxOffset = v(0, 120);
 	body1 = addBall(posA, boxOffset);
 	body2 = addBall(posB, boxOffset);
-	//space.addConstraint(cpDampedSpringNew(body1, body2, v(15,0), v(-15,0), 20, 5, 0.3f));
+	body2.setAngle(Math.PI);
+	space.addConstraint(new cp.DampedSpring(body1, body2, v(15,0), v(15,0), 20, 5, 0.3));
 	
 	// Damped Rotary Springs
 	boxOffset = v(160, 120);

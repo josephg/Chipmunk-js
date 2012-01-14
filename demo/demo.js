@@ -291,6 +291,46 @@ var drawLine = function(ctx, point2canvas, a, b) {
 	ctx.stroke();
 };
 
+var springPoints = [
+	v(0.00, 0.0),
+	v(0.20, 0.0),
+	v(0.25, 3.0),
+	v(0.30,-6.0),
+	v(0.35, 6.0),
+	v(0.40,-6.0),
+	v(0.45, 6.0),
+	v(0.50,-6.0),
+	v(0.55, 6.0),
+	v(0.60,-6.0),
+	v(0.65, 6.0),
+	v(0.70,-3.0),
+	v(0.75, 6.0),
+	v(0.80, 0.0),
+	v(1.00, 0.0)
+];
+
+var drawSpring = function(ctx, scale, point2canvas, a, b) {
+	a = point2canvas(a); b = point2canvas(b);
+	
+	ctx.beginPath();
+	ctx.moveTo(a.x, a.y);
+
+	var delta = v.sub(b, a);
+	var len = v.len(delta);
+	var rot = v.mult(delta, 1/len);
+
+	for(var i = 1; i < springPoints.length; i++) {
+
+		var p = v.add(a, v.rotate(v(springPoints[i].x * len, springPoints[i].y * scale), rot));
+
+		//var p = v.add(a, v.rotate(springPoints[i], delta));
+		
+		ctx.lineTo(p.x, p.y);
+	}
+
+	ctx.stroke();
+};
+
 
 // **** Draw methods for Shapes
 
@@ -368,6 +408,13 @@ cp.GrooveJoint.prototype.draw = function(ctx, scale, point2canvas) {
 	drawCircle(ctx, scale, point2canvas, c, 3);
 };
 
+cp.DampedSpring.prototype.draw = function(ctx, scale, point2canvas) {
+	var a = this.a.local2World(this.anchr1);
+	var b = this.b.local2World(this.anchr2);
+
+	ctx.strokeStyle = "grey";
+	drawSpring(ctx, scale, point2canvas, a, b);
+};
 
 
 var randColor = function() {
