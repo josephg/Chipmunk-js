@@ -23,8 +23,9 @@ var Joints = function() {
 	Demo.call(this);
 
 	var space = this.space;
+	var boxOffset;
 
-	var addBall = function(pos, boxOffset)
+	var addBall = function(pos)
 	{
 		var radius = 15;
 		var mass = 1;
@@ -38,7 +39,7 @@ var Joints = function() {
 		return body;
 	};
 
-	var addLever = function(pos, boxOffset)
+	var addLever = function(pos)
 	{
 		var mass = 1;
 		var a = v(0,  15);
@@ -54,7 +55,7 @@ var Joints = function() {
 		return body;
 	};
 
-	var addBar = function(pos, boxOffset)
+	var addBar = function(pos)
 	{
 		var mass = 2;
 		var a = v(0,  30);
@@ -70,7 +71,7 @@ var Joints = function() {
 		return body;
 	};
 
-	var addWheel = function(pos, boxOffset)
+	var addWheel = function(pos)
 	{
 		var radius = 15;
 		var mass = 1;
@@ -85,7 +86,7 @@ var Joints = function() {
 		return body;
 	};
 
-	var addChassis = function(pos, boxOffset)
+	var addChassis = function(pos)
 	{
 		var mass = 5;
 		var width = 80;
@@ -123,7 +124,6 @@ var Joints = function() {
 		shape.layers = NOT_GRABABLE_MASK;
 	}
 	
-	var boxOffset;
 	var body1, body2;
 	
 	var posA = v( 50, 60);
@@ -134,26 +134,34 @@ var Joints = function() {
 	//#define POS_A vadd(boxOffset, posA)
 	//#define POS_B vadd(boxOffset, posB)
 	
+	this.labels = labels = [];
+	var label = function(text) {
+		labels.push({text:text, pos:boxOffset});
+	};
+
 	// Pin Joints - Link shapes with a solid bar or pin.
 	// Keeps the anchor points the same distance apart from when the joint was created.
 	boxOffset = v(0, 0);
-	body1 = addBall(posA, boxOffset);
-	body2 = addBall(posB, boxOffset);
+	label('Pin Joint');
+	body1 = addBall(posA);
+	body2 = addBall(posB);
 	body2.setAngle(Math.PI);
 	space.addConstraint(new cp.PinJoint(body1, body2, v(15,0), v(15,0)));
 	
 	// Slide Joints - Like pin joints but with a min/max distance.
 	// Can be used for a cheap approximation of a rope.
 	boxOffset = v(160, 0);
-	body1 = addBall(posA, boxOffset);
-	body2 = addBall(posB, boxOffset);
+	label('Slide Joint');
+	body1 = addBall(posA);
+	body2 = addBall(posB);
 	body2.setAngle(Math.PI);
 	space.addConstraint(new cp.SlideJoint(body1, body2, v(15,0), v(15,0), 20, 40));
 	
 	// Pivot Joints - Holds the two anchor points together. Like a swivel.
 	boxOffset = v(320, 0);
-	body1 = addBall(posA, boxOffset);
-	body2 = addBall(posB, boxOffset);
+	label('Pivot Joint');
+	body1 = addBall(posA);
+	body2 = addBall(posB);
 	body2.setAngle(Math.PI);
 	// cp.PivotJoint(a, b, v) takes it's anchor parameter in world coordinates. The anchors are calculated from that
 	// Alternately, specify two anchor points using cp.PivotJoint(a, b, anch1, anch2)
@@ -161,21 +169,24 @@ var Joints = function() {
 	
 	// Groove Joints - Like a pivot joint, but one of the anchors is a line segment that the pivot can slide in
 	boxOffset = v(480, 0);
-	body1 = addBall(posA, boxOffset);
-	body2 = addBall(posB, boxOffset);
+	label('Groove Joint');
+	body1 = addBall(posA);
+	body2 = addBall(posB);
 	space.addConstraint(new cp.GrooveJoint(body1, body2, v(30,30), v(30,-30), v(-30,0)));
 	
 	// Damped Springs
 	boxOffset = v(0, 120);
-	body1 = addBall(posA, boxOffset);
-	body2 = addBall(posB, boxOffset);
+	label('Damped Spring');
+	body1 = addBall(posA);
+	body2 = addBall(posB);
 	body2.setAngle(Math.PI);
 	space.addConstraint(new cp.DampedSpring(body1, body2, v(15,0), v(15,0), 20, 5, 0.3));
 	
 	// Damped Rotary Springs
 	boxOffset = v(160, 120);
-	body1 = addBar(posA, boxOffset);
-	body2 = addBar(posB, boxOffset);
+	label('Damped Rotary Spring');
+	body1 = addBar(posA);
+	body2 = addBar(posB);
 	// Add some pin joints to hold the circles in place.
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
@@ -183,8 +194,9 @@ var Joints = function() {
 	
 	// Rotary Limit Joint
 	boxOffset = v(320, 120);
-	body1 = addLever(posA, boxOffset);
-	body2 = addLever(posB, boxOffset);
+	label('Rotary Limit Joint');
+	body1 = addLever(posA);
+	body2 = addLever(posB);
 	// Add some pin joints to hold the circles in place.
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
@@ -193,8 +205,9 @@ var Joints = function() {
 	
 	// Ratchet Joint - A rotary ratchet, like a socket wrench
 	boxOffset = v(480, 120);
-	body1 = addLever(posA, boxOffset);
-	body2 = addLever(posB, boxOffset);
+	label('Ratchet Joint');
+	body1 = addLever(posA);
+	body2 = addLever(posB);
 	// Add some pin joints to hold the circles in place.
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
@@ -203,8 +216,9 @@ var Joints = function() {
 	
 	// Gear Joint - Maintain a specific angular velocity ratio
 	boxOffset = v(0, 240);
-	body1 = addBar(posA, boxOffset);
-	body2 = addBar(posB, boxOffset);
+	label('Gear Joint');
+	body1 = addBar(posA);
+	body2 = addBar(posB);
 	// Add some pin joints to hold the circles in place.
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
@@ -213,8 +227,9 @@ var Joints = function() {
 	
 	// Simple Motor - Maintain a specific angular relative velocity
 	boxOffset = v(160, 240);
-	body1 = addBar(posA, boxOffset);
-	body2 = addBar(posB, boxOffset);
+	label('Simple Motor');
+	body1 = addBar(posA);
+	body2 = addBar(posB);
 	// Add some pin joints to hold the circles in place.
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
@@ -223,9 +238,9 @@ var Joints = function() {
 	
 	// Make a car with some nice soft suspension
 	boxOffset = v(320, 240);
-	var wheel1 = addWheel(posA, boxOffset);
-	var wheel2 = addWheel(posB, boxOffset);
-	var chassis = addChassis(v(80, 100), boxOffset);
+	var wheel1 = addWheel(posA);
+	var wheel2 = addWheel(posB);
+	var chassis = addChassis(v(80, 100));
 	
 	space.addConstraint(new cp.GrooveJoint(chassis, wheel1, v(-30, -10), v(-30, -40), v(0,0)));
 	space.addConstraint(new cp.GrooveJoint(chassis, wheel2, v( 30, -10), v( 30, -40), v(0,0)));
@@ -235,6 +250,19 @@ var Joints = function() {
 };
 
 Joints.prototype = Object.create(Demo.prototype);
+
+Joints.prototype.draw = function() {
+	Demo.prototype.draw.call(this);
+
+	this.ctx.textAlign = 'center';
+	this.ctx.textBaseline = 'top';
+
+	for(var i = 0; i < this.labels.length; i++) {
+		var l = this.labels[i];
+		var p = this.point2canvas(v.add(l.pos, v(80, 115)));
+		this.ctx.fillText(l.text, p.x, p.y);
+	}
+};
 
 addDemo('Joints', Joints);
 

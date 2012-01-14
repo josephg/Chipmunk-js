@@ -117,6 +117,8 @@ Demo.prototype.drawInfo = function() {
 
 	var maxWidth = this.width - 20;
 
+	this.ctx.textAlign = 'start';
+	this.ctx.textBaseline = 'alphabetic';
 	this.ctx.fillStyle = "black";
 	//this.ctx.fillText(this.ctx.font, 100, 100);
 	var fpsStr = Math.floor(this.fps * 10) / 10;
