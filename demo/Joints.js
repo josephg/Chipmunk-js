@@ -163,7 +163,7 @@ var Joints = function() {
 	boxOffset = v(480, 0);
 	body1 = addBall(posA, boxOffset);
 	body2 = addBall(posB, boxOffset);
-	//space.addConstraint(cpGrooveJointNew(body1, body2, v(30,30), v(30,-30), v(-30,0)));
+	space.addConstraint(new cp.GrooveJoint(body1, body2, v(30,30), v(30,-30), v(-30,0)));
 	
 	// Damped Springs
 	boxOffset = v(0, 120);

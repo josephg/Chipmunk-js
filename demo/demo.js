@@ -329,8 +329,8 @@ cp.CircleShape.prototype.draw = function(ctx, scale, point2canvas) {
 // Draw methods for constraints
 
 cp.PinJoint.prototype.draw = function(ctx, scale, point2canvas) {
-	var a = v.add(this.a.p, v.rotate(this.anchr1, this.a.rot));
-	var b = v.add(this.b.p, v.rotate(this.anchr2, this.b.rot));
+	var a = this.a.local2World(this.anchr1);
+	var b = this.b.local2World(this.anchr2);
 	
 	ctx.lineWidth = 2;
 	ctx.strokeStyle = "grey";
@@ -338,8 +338,8 @@ cp.PinJoint.prototype.draw = function(ctx, scale, point2canvas) {
 };
 
 cp.SlideJoint.prototype.draw = function(ctx, scale, point2canvas) {
-	var a = v.add(this.a.p, v.rotate(this.anchr1, this.a.rot));
-	var b = v.add(this.b.p, v.rotate(this.anchr2, this.b.rot));
+	var a = this.a.local2World(this.anchr1);
+	var b = this.b.local2World(this.anchr2);
 	var midpoint = v.add(a, v.clamp(v.sub(b, a), this.min));
 
 	ctx.lineWidth = 2;
@@ -350,13 +350,25 @@ cp.SlideJoint.prototype.draw = function(ctx, scale, point2canvas) {
 };
 
 cp.PivotJoint.prototype.draw = function(ctx, scale, point2canvas) {
-	var a = v.add(this.a.p, v.rotate(this.anchr1, this.a.rot));
-	var b = v.add(this.b.p, v.rotate(this.anchr2, this.b.rot));
+	var a = this.a.local2World(this.anchr1);
+	var b = this.b.local2World(this.anchr2);
 	ctx.strokeStyle = "grey";
 	ctx.fillStyle = "grey";
 	drawCircle(ctx, scale, point2canvas, a, 2);
 	drawCircle(ctx, scale, point2canvas, b, 2);
 };
+
+cp.GrooveJoint.prototype.draw = function(ctx, scale, point2canvas) {
+	var a = this.a.local2World(this.grv_a);
+	var b = this.a.local2World(this.grv_b);
+	var c = this.b.local2World(this.anchr2);
+	
+	ctx.strokeStyle = "grey";
+	drawLine(ctx, point2canvas, a, b);
+	drawCircle(ctx, scale, point2canvas, c, 3);
+};
+
+
 
 var randColor = function() {
   return Math.floor(Math.random() * 256);
