@@ -77,7 +77,7 @@ In javascript, the equivalent code is:
   var space = new cp.Space();
   space.iterations = 10;
   
-  var offset = new cp.Vect(-320, -240);
+  var offset = cp.v(-320, -240);
   for(var i=0; i<(bouncy_terrain_verts.length - 1); i++){
     var a = bouncy_terrain_verts[i], b = bouncy_terrain_verts[i+1];
     var shape = space.addShape(new cp.SegmentShape(space.staticBody, cp.vadd(a, offset), cp.vadd(b, offset), 0));
