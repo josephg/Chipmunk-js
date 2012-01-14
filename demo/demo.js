@@ -189,9 +189,12 @@ Demo.prototype.draw = function() {
 		ctx.stroke();
 	}
 
+	this.space.eachConstraint(function(c) {
+		c.draw(ctx, self.scale, self.point2canvas);
+	});
+
 	this.drawInfo();
 };
-
 
 Demo.prototype.run = function() {
 	this.running = true;
@@ -269,7 +272,27 @@ Demo.prototype.addWalls = function() {
 	wall2.setLayers(NOT_GRABABLE_MASK);
 };
 
-// **** Extras for Shapes
+// Drawing helper methods
+
+var drawCircle = function(ctx, scale, point2canvas, c, radius) {
+	var c = point2canvas(c);
+	ctx.beginPath();
+	ctx.arc(c.x, c.y, scale * radius, 0, 2*Math.PI, false);
+	ctx.fill();
+	ctx.stroke();
+};
+
+var drawLine = function(ctx, point2canvas, a, b) {
+	a = point2canvas(a); b = point2canvas(b);
+
+	ctx.beginPath();
+	ctx.moveTo(a.x, a.y);
+	ctx.lineTo(b.x, b.y);
+	ctx.stroke();
+};
+
+
+// **** Draw methods for Shapes
 
 cp.PolyShape.prototype.draw = function(ctx, scale, point2canvas)
 {
@@ -289,31 +312,50 @@ cp.PolyShape.prototype.draw = function(ctx, scale, point2canvas)
 };
 
 cp.SegmentShape.prototype.draw = function(ctx, scale, point2canvas) {
-	ctx.beginPath();
-	var a = point2canvas(this.ta);
-	var b = point2canvas(this.tb);
-	ctx.moveTo(a.x, a.y);
-	ctx.lineTo(b.x, b.y);
-
 	var oldLineWidth = ctx.lineWidth;
 	ctx.lineWidth = Math.max(1, this.r * scale * 2);
-	ctx.stroke();
+	drawLine(ctx, point2canvas, this.ta, this.tb);
 	ctx.lineWidth = oldLineWidth;
 };
 
 cp.CircleShape.prototype.draw = function(ctx, scale, point2canvas) {
-	ctx.beginPath();
-	var c = point2canvas(this.tc);
-	ctx.arc(c.x, c.y, scale * this.r, 0, 2*Math.PI, false);
-	ctx.fill();
-	ctx.stroke();
+	drawCircle(ctx, scale, point2canvas, this.tc, this.r);
 
 	// And draw a little radian so you can see the circle roll.
-	ctx.beginPath();
-	var rad = point2canvas(cp.v.mult(this.body.rot, this.r).add(this.tc));
-	ctx.moveTo(c.x, c.y);
-	ctx.lineTo(rad.x, rad.y);
-	ctx.stroke();
+	drawLine(ctx, point2canvas, this.tc, cp.v.mult(this.body.rot, this.r).add(this.tc));
+};
+
+
+// Draw methods for constraints
+
+cp.PinJoint.prototype.draw = function(ctx, scale, point2canvas) {
+	var a = v.add(this.a.p, v.rotate(this.anchr1, this.a.rot));
+	var b = v.add(this.b.p, v.rotate(this.anchr2, this.b.rot));
+	
+	ctx.lineWidth = 2;
+	ctx.strokeStyle = "grey";
+	drawLine(ctx, point2canvas, a, b);
+};
+
+cp.SlideJoint.prototype.draw = function(ctx, scale, point2canvas) {
+	var a = v.add(this.a.p, v.rotate(this.anchr1, this.a.rot));
+	var b = v.add(this.b.p, v.rotate(this.anchr2, this.b.rot));
+	var midpoint = v.add(a, v.clamp(v.sub(b, a), this.min));
+
+	ctx.lineWidth = 2;
+	ctx.strokeStyle = "grey";
+	drawLine(ctx, point2canvas, a, b);
+	ctx.strokeStyle = "red";
+	drawLine(ctx, point2canvas, a, midpoint);
+};
+
+cp.PivotJoint.prototype.draw = function(ctx, scale, point2canvas) {
+	var a = v.add(this.a.p, v.rotate(this.anchr1, this.a.rot));
+	var b = v.add(this.b.p, v.rotate(this.anchr2, this.b.rot));
+	ctx.strokeStyle = "grey";
+	ctx.fillStyle = "grey";
+	drawCircle(ctx, scale, point2canvas, a, 2);
+	drawCircle(ctx, scale, point2canvas, b, 2);
 };
 
 var randColor = function() {

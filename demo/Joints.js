@@ -139,14 +139,16 @@ var Joints = function() {
 	boxOffset = v(0, 0);
 	body1 = addBall(posA, boxOffset);
 	body2 = addBall(posB, boxOffset);
-	space.addConstraint(new cp.PinJoint(body1, body2, v(15,0), v(-15,0)));
+	body2.setAngle(Math.PI);
+	space.addConstraint(new cp.PinJoint(body1, body2, v(15,0), v(15,0)));
 	
 	// Slide Joints - Like pin joints but with a min/max distance.
 	// Can be used for a cheap approximation of a rope.
 	boxOffset = v(160, 0);
 	body1 = addBall(posA, boxOffset);
 	body2 = addBall(posB, boxOffset);
-	space.addConstraint(new cp.SlideJoint(body1, body2, v(15,0), v(-15,0), 20, 40));
+	body2.setAngle(Math.PI);
+	space.addConstraint(new cp.SlideJoint(body1, body2, v(15,0), v(15,0), 20, 40));
 	
 	// Pivot Joints - Holds the two anchor points together. Like a swivel.
 	boxOffset = v(320, 0);

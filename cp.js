@@ -4976,6 +4976,7 @@ var PinJoint = exports.PinJoint = function(a, b, anchr1, anchr2)
 };
 
 PinJoint.prototype = Object.create(Constraint.prototype);
+PinJoint.prototype.type = "pin joint";
 
 PinJoint.prototype.preStep = function(dt)
 {
@@ -5068,6 +5069,7 @@ var SlideJoint = exports.SlideJoint = function(a, b, anchr1, anchr2, min, max)
 };
 
 SlideJoint.prototype = Object.create(Constraint.prototype);
+SlideJoint.prototype.type = "slide joint";
 
 SlideJoint.prototype.preStep = function(dt)
 {
@@ -5185,6 +5187,7 @@ var PivotJoint = exports.PivotJoint = function(a, b, anchr1, anchr2)
 };
 
 PivotJoint.prototype = Object.create(Constraint.prototype);
+PivotJoint.prototype.type = "pivot joint";
 
 PivotJoint.prototype.preStep = function(dt)
 {
