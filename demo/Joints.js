@@ -179,7 +179,7 @@ var Joints = function() {
 	// Add some pin joints to hold the circles in place.
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
-	//space.addConstraint(cpDampedRotarySpringNew(body1, body2, 0, 3000, 60));
+	space.addConstraint(new cp.DampedRotarySpring(body1, body2, 0, 3000, 60));
 	
 	// Rotary Limit Joint
 	boxOffset = v(320, 120);
@@ -189,7 +189,7 @@ var Joints = function() {
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
 	// Hold their rotation within 90 degrees of each other.
-	//space.addConstraint(cpRotaryLimitJointNew(body1, body2, -M_PI_2, M_PI_2));
+	space.addConstraint(new cp.RotaryLimitJoint(body1, body2, -Math.PI/2, Math.PI/2));
 	
 	// Ratchet Joint - A rotary ratchet, like a socket wrench
 	boxOffset = v(480, 120);
@@ -199,7 +199,7 @@ var Joints = function() {
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
 	// Ratchet every 90 degrees
-	//space.addConstraint(cpRatchetJointNew(body1, body2, 0, M_PI_2));
+	space.addConstraint(new cp.RatchetJoint(body1, body2, 0, Math.PI/2));
 	
 	// Gear Joint - Maintain a specific angular velocity ratio
 	boxOffset = v(0, 240);
@@ -209,7 +209,7 @@ var Joints = function() {
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
 	// Force one to sping 2x as fast as the other
-	//space.addConstraint(cpGearJointNew(body1, body2, 0, 2));
+	space.addConstraint(new cp.GearJoint(body1, body2, 0, 2));
 	
 	// Simple Motor - Maintain a specific angular relative velocity
 	boxOffset = v(160, 240);
@@ -219,7 +219,7 @@ var Joints = function() {
 	space.addConstraint(new cp.PivotJoint(body1, staticBody, POS_A()));
 	space.addConstraint(new cp.PivotJoint(body2, staticBody, POS_B()));
 	// Make them spin at 1/2 revolution per second in relation to each other.
-	//space.addConstraint(cpSimpleMotorNew(body1, body2, M_PI));
+	space.addConstraint(new cp.SimpleMotor(body1, body2, Math.PI));
 	
 	// Make a car with some nice soft suspension
 	boxOffset = v(320, 240);
@@ -227,13 +227,11 @@ var Joints = function() {
 	var wheel2 = addWheel(posB, boxOffset);
 	var chassis = addChassis(v(80, 100), boxOffset);
 	
-	//space.addConstraint(cpGrooveJointNew(chassis, wheel1, v(-30, -10), v(-30, -40), v(0,0)));
-	//space.addConstraint(cpGrooveJointNew(chassis, wheel2, v( 30, -10), v( 30, -40), v(0,0)));
+	space.addConstraint(new cp.GrooveJoint(chassis, wheel1, v(-30, -10), v(-30, -40), v(0,0)));
+	space.addConstraint(new cp.GrooveJoint(chassis, wheel2, v( 30, -10), v( 30, -40), v(0,0)));
 	
-	//space.addConstraint(cpDampedSpringNew(chassis, wheel1, v(-30, 0), v(0,0), 50, 20, 10));
-	//space.addConstraint(cpDampedSpringNew(chassis, wheel2, v( 30, 0), v(0,0), 50, 20, 10));
-	
-	
+	space.addConstraint(new cp.DampedSpring(chassis, wheel1, v(-30, 0), v(0,0), 50, 20, 10));
+	space.addConstraint(new cp.DampedSpring(chassis, wheel2, v( 30, 0), v(0,0), 50, 20, 10));
 };
 
 Joints.prototype = Object.create(Demo.prototype);

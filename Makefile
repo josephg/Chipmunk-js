@@ -24,7 +24,12 @@ constraints = \
 		cpSlideJoint.js \
 		cpPivotJoint.js \
 		cpGrooveJoint.js \
-		cpDampedSpring.js 
+		cpDampedSpring.js \
+		cpDampedRotarySpring.js \
+		cpRotaryLimitJoint.js \
+		cpRatchetJoint.js \
+		cpGearJoint.js \
+		cpSimpleMotor.js 
 
 demos = demo.js \
 		ball.js \

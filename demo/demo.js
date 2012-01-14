@@ -190,7 +190,9 @@ Demo.prototype.draw = function() {
 	}
 
 	this.space.eachConstraint(function(c) {
-		c.draw(ctx, self.scale, self.point2canvas);
+		if(c.draw) {
+			c.draw(ctx, self.scale, self.point2canvas);
+		}
 	});
 
 	this.drawInfo();
@@ -415,7 +417,6 @@ cp.DampedSpring.prototype.draw = function(ctx, scale, point2canvas) {
 	ctx.strokeStyle = "grey";
 	drawSpring(ctx, scale, point2canvas, a, b);
 };
-
 
 var randColor = function() {
   return Math.floor(Math.random() * 256);
