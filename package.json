@@ -2,7 +2,7 @@
   "author": "Joseph Gentle <josephg@gmail.com> (josephg.com)",
   "name": "chipmunk",
   "description": "Chipmunk physics engine, ported to Javascript",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "homepage": "https://github.com/josephg/chipmunk-js",
   "repository": {
     "type": "git",

@@ -2,14 +2,10 @@
 
 This is a port of the [Chipmunk Physics](http://chipmunk-physics.net/) library to Javascript!
 
-Its not complete.
-
 ## Caveats
 
-- Some features are not implemented. Namely:
-  - The spatial hash - based space
-  - Joints. (The infrastructure is there, but the joints themselves haven't been ported yet)
-- It is much slower than the C version (duh, its in javascript). Specifically, physics simulations using chipmunk-js run between 3-7 times slower than the C equivalent. I expect to make big improvements to that over the next few months.
+- It is slower than the C version (duh, its in javascript). Specifically, physics simulations using chipmunk-js runs about 3 times slower than the C equivalent.
+- I haven't implemented chipmunk's spatial hash, and I have no intention to do so.
 
 # Usage
 
@@ -29,7 +25,7 @@ cpMomentForPoly(mass, numVerts, *verts, offset);
 momentForPoly(mass, verts, offset);
     ```
 
-- Some trivial getters and setters have been removed. Access the property directly.
+- Lots of trivial getters and setters have been removed. Access the property directly.
 
 ## On a website
 
