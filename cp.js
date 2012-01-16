@@ -31,12 +31,12 @@ Object.create = Object.create || function(o) {
 var cp;
 if(typeof exports === 'undefined'){
 	cp = {};
+
+	if(typeof window === 'object'){
+		window.cp = cp;
+	}
 } else {
 	cp = exports;
-}
-
-if(typeof window === 'object'){
-	window.cp = cp;
 }
 
 var assert = function(value, message)
