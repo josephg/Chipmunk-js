@@ -23,7 +23,7 @@ var PyramidStack = function() {
 	Demo.call(this);
 
 	var space = this.space;
-	space.iterations = 30;
+	//space.iterations = 30;
 	space.gravity = v(0, -100);
 	space.sleepTimeThreshold = 0.5;
 	space.collisionSlop = 0.5;
@@ -58,6 +58,7 @@ var PyramidStack = function() {
 
 PyramidStack.prototype = Object.create(Demo.prototype);
 
+/*
 PyramidStack.prototype.update = function(dt)
 {
 	var steps = 3;
@@ -65,7 +66,7 @@ PyramidStack.prototype.update = function(dt)
 	for (var i = 0; i < 3; i++){
 		this.space.step(dt);
 	}
-};
+};*/
 
 addDemo('PyramidStack', PyramidStack);
 

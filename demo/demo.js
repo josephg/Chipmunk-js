@@ -162,6 +162,7 @@ Demo.prototype.draw = function() {
 	});
 
 	// Draw collisions
+  /*
 	ctx.strokeStyle = "red";
 	ctx.lineWidth = 2;
 
@@ -181,7 +182,7 @@ Demo.prototype.draw = function() {
 			ctx.lineTo(p.x - 2, p.y + 2);
 			ctx.stroke();
 		}
-	}
+	}*/
 
 	if (this.mouseJoint) {
 		ctx.beginPath();

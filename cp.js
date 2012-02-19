@@ -142,10 +142,9 @@ var momentForPoly = cp.momentForPoly = function(m, verts, offset)
 
 var areaForPoly = cp.areaForPoly = function(verts)
 {
-	throw new Error('Not updated for flat verts');
 	var area = 0;
-	for(var i=0, len=verts.length; i<len; i++){
-		area += vcross(verts[i], verts[(i+1)%len]);
+	for(var i=0, len=verts.length; i<len; i+=2){
+		area += vcross(new Vect(verts[i], verts[i+1]), new Vect(verts[(i+2)%len], verts[(i+3)%len]));
 	}
 	
 	return -area/2;
@@ -153,13 +152,12 @@ var areaForPoly = cp.areaForPoly = function(verts)
 
 var centroidForPoly = cp.centroidForPoly = function(verts)
 {
-	throw new Error('Not updated for flat verts');
 	var sum = 0;
-	var vsum = [0,0];
+	var vsum = new Vect(0,0);
 	
-	for(var i=0, len=verts.length; i<len; i++){
-		var v1 = verts[i];
-		var v2 = verts[(i+1)%len];
+	for(var i=0, len=verts.length; i<len; i+=2){
+		var v1 = new Vect(verts[i], verts[i+1]);
+		var v2 = new Vect(verts[(i+2)%len], verts[(i+3)%len]);
 		var cross = vcross(v1, v2);
 		
 		sum += cross;
@@ -171,11 +169,11 @@ var centroidForPoly = cp.centroidForPoly = function(verts)
 
 var recenterPoly = cp.recenterPoly = function(verts)
 {
-	throw new Error('Not updated for flat verts');
 	var centroid = centroidForPoly(verts);
 	
-	for(var i=0; i<verts.length; i++){
-		verts[i] = vsub(verts[i], centroid);
+	for(var i=0; i<verts.length; i+=2){
+    verts[i] -= centroid.x;
+    verts[i+1] -= centroid.y;
 	}
 };
 
@@ -513,7 +511,7 @@ var vstr = cp.v.str = function(v)
 var numBB = 0;
 
 // Bounding boxes are JS objects with {l, b, r, t} = left, bottom, right, top, respectively.
-var BB = function(l, b, r, t)
+var BB = cp.BB = function(l, b, r, t)
 {
 	this.l = l;
 	this.b = b;
@@ -522,6 +520,8 @@ var BB = function(l, b, r, t)
 
 	numBB++;
 };
+
+cp.bb = function(l, b, r, t) { return new BB(l, b, r, t); };
 
 var bbNewForCircle = function(p, r)
 {
