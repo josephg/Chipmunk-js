@@ -172,8 +172,8 @@ var recenterPoly = cp.recenterPoly = function(verts)
 	var centroid = centroidForPoly(verts);
 	
 	for(var i=0; i<verts.length; i+=2){
-    verts[i] -= centroid.x;
-    verts[i+1] -= centroid.y;
+		verts[i] -= centroid.x;
+		verts[i+1] -= centroid.y;
 	}
 };
 
@@ -1608,7 +1608,7 @@ Body.prototype.eachArbiter = function(func)
 {
 	var arb = this.arbiterList;
 	while(arb){
-		var next = arb.next(body);
+		var next = arb.next(this);
 		
 		arb.swappedColl = (this === arb.body_b);
 		func(arb);
