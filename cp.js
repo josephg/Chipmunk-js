@@ -1302,16 +1302,6 @@ PolyShape.prototype.containsVertPartial = function(vx, vy, n)
 /// @{
 
 var Body = cp.Body = function(m, i) {
-	/// Function that is called to update the body's velocity.
-	/// Override this to customize movement. Defaults to body.updateVelocity
-	/// body.velocity_func(gravity, damping, dt);
-	Body.prototype.velocity_func = Body.prototype.updateVelocity;
-
-	/// Function that is called to update the body's position.
-	/// Override this to customize movement. Defaults to body.updatePosition
-	/// body.position_func(dt);
-	Body.prototype.position_func = Body.prototype.updatePosition;
-
 	/// Mass of the body.
 	/// Must agree with cpBody.m_inv! Use body.setMass() when changing the mass for this reason.
 	//this.m;
@@ -1514,7 +1504,7 @@ Body.prototype.setAngle = function(angle)
 	this.setAngleInternal(angle);
 }
 
-Body.prototype.updateVelocity = function(gravity, damping, dt)
+Body.prototype.velocity_func = function(gravity, damping, dt)
 {
 	//this.v = vclamp(vadd(vmult(this.v, damping), vmult(vadd(gravity, vmult(this.f, this.m_inv)), dt)), this.v_limit);
 	var vx = this.vx * damping + (gravity.x + this.f.x * this.m_inv) * dt;
@@ -1534,7 +1524,7 @@ Body.prototype.updateVelocity = function(gravity, damping, dt)
 	this.sanityCheck();
 };
 
-Body.prototype.updatePosition = function(dt)
+Body.prototype.position_func = function(dt)
 {
 	//this.p = vadd(this.p, vmult(vadd(this.v, this.v_bias), dt));
 	
