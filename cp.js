@@ -3928,7 +3928,7 @@ Body.prototype.activate = function()
 
 Body.prototype.activateStatic = function(filter)
 {
-	assert(body.isStatic(this), "Body.activateStatic() called on a non-static body.");
+	assert(this.isStatic(), "Body.activateStatic() called on a non-static body.");
 	
 	for(var arb = this.arbiterList; arb; arb = arb.next(this)){
 		if(!filter || filter == arb.a || filter == arb.b){
@@ -4336,7 +4336,7 @@ Space.prototype.shapeQuery = function(shape, func)
 /// Schedule a post-step callback to be called when cpSpaceStep() finishes.
 Space.prototype.addPostStepCallback = function(func)
 {
-	assertWarn(this.locked,
+	assertSoft(this.locked,
 		"Adding a post-step callback when the space is not locked is unnecessary. " +
 		"Post-step callbacks will not called until the end of the next call to cpSpaceStep() or the next query.");
 	
@@ -4350,6 +4350,7 @@ Space.prototype.runPostStepCallbacks = function()
 	for(var i = 0; i < this.postStepCallbacks.length; i++){
 		this.postStepCallbacks[i]();
 	}
+	this.postStepCallbacks = []
 };
 
 // **** Locking Functions
