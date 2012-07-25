@@ -2676,10 +2676,10 @@ Arbiter.prototype.totalImpulseWithFriction = function()
 /// This function should only be called from a post-solve, post-step or cpBodyEachArbiter callback.
 Arbiter.prototype.totalKE = function()
 {
-	var eCoef = (1 - arb.e)/(1 + arb.e);
+	var eCoef = (1 - this.e)/(1 + this.e);
 	var sum = 0;
 	
-	var contacts = arb.contacts;
+	var contacts = this.contacts;
 	for(var i=0, count=contacts.length; i<count; i++){
 		var con = contacts[i];
 		var jnAcc = con.jnAcc;
@@ -2973,7 +2973,6 @@ Arbiter.prototype.next = function(body)
 {
 	return (this.body_a == body ? this.thread_a_next : this.thread_b_next);
 };
-
 /* Copyright (c) 2007 Scott Lembcke
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
