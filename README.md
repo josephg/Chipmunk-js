@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/josephg/Chipmunk-js.png)](http://travis-ci.org/josephg/Chipmunk-js)
 # Chipmunk for Javascript!
 
 This is a port of the [Chipmunk Physics](http://chipmunk-physics.net/) library to Javascript!
