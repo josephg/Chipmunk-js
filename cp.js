@@ -967,7 +967,7 @@ SegmentShape.prototype.segmentQuery = function(a, b)
 		if(ad*bd < 0){
 			return new SegmentQueryInfo(this, ad/(ad - bd), flipped_n);
 		}
-	} else if(r != 0){
+	} else if(r !== 0){
 		var info1 = circleSegmentQuery(this, this.ta, this.r, a, b);
 		var info2 = circleSegmentQuery(this, this.tb, this.r, a, b);
 		
@@ -1510,7 +1510,7 @@ Body.prototype.setAngle = function(angle)
 	this.activate();
 	this.sanityCheck();
 	this.setAngleInternal(angle);
-}
+};
 
 Body.prototype.velocity_func = function(gravity, damping, dt)
 {
@@ -1583,7 +1583,7 @@ Body.prototype.getVelAtWorldPoint = function(point)
 Body.prototype.getVelAtLocalPoint = function(point)
 {
 	return this.getVelAtPoint(vrotate(point, body.rot));
-}
+};
 
 Body.prototype.eachShape = function(func)
 {
