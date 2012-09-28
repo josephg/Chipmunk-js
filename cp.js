@@ -711,7 +711,6 @@ Shape.prototype.setLayers = function(layers) { this.body.activate(); this.layers
 Shape.prototype.setSensor = function(sensor) { this.body.activate(); this.sensor = sensor; };
 Shape.prototype.setCollisionType = function(collision_type) { this.body.activate(); this.collision_type = collision_type; };
 
-
 Shape.prototype.active = function()
 {
 // return shape->prev || shape->body->shapeList == shape;
