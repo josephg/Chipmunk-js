@@ -708,6 +708,9 @@ var Shape = cp.Shape = function(body) {
 Shape.prototype.setElasticity = function(e) { this.e = e; };
 Shape.prototype.setFriction = function(u) { this.body.activate(); this.u = u; };
 Shape.prototype.setLayers = function(layers) { this.body.activate(); this.layers = layers; };
+Shape.prototype.setSensor = function(sensor) { this.body.activate(); this.sensor = sensor; };
+Shape.prototype.setCollisionType = function(collision_type) { this.body.activate(); this.collision_type = collision_type; };
+
 
 Shape.prototype.active = function()
 {
@@ -1485,6 +1488,12 @@ Body.prototype.setVelocity = function(velocity)
 	this.activate();
 	this.vx = velocity.x;
 	this.vy = velocity.y;
+};
+
+Body.prototype.setAngularVelocity = function(w)
+{
+	this.activate();
+	this.w = w;
 };
 
 Body.prototype.setAngleInternal = function(angle)
