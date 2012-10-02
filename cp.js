@@ -708,6 +708,8 @@ var Shape = cp.Shape = function(body) {
 Shape.prototype.setElasticity = function(e) { this.e = e; };
 Shape.prototype.setFriction = function(u) { this.body.activate(); this.u = u; };
 Shape.prototype.setLayers = function(layers) { this.body.activate(); this.layers = layers; };
+Shape.prototype.setSensor = function(sensor) { this.body.activate(); this.sensor = sensor; };
+Shape.prototype.setCollisionType = function(collision_type) { this.body.activate(); this.collision_type = collision_type; };
 
 Shape.prototype.active = function()
 {
@@ -965,7 +967,7 @@ SegmentShape.prototype.segmentQuery = function(a, b)
 		if(ad*bd < 0){
 			return new SegmentQueryInfo(this, ad/(ad - bd), flipped_n);
 		}
-	} else if(r != 0){
+	} else if(r !== 0){
 		var info1 = circleSegmentQuery(this, this.ta, this.r, a, b);
 		var info2 = circleSegmentQuery(this, this.tb, this.r, a, b);
 		
@@ -1487,6 +1489,12 @@ Body.prototype.setVelocity = function(velocity)
 	this.vy = velocity.y;
 };
 
+Body.prototype.setAngularVelocity = function(w)
+{
+	this.activate();
+	this.w = w;
+};
+
 Body.prototype.setAngleInternal = function(angle)
 {
 	assert(!isNaN(angle), "Internal Error: Attempting to set body's angle to NaN");
@@ -1502,7 +1510,7 @@ Body.prototype.setAngle = function(angle)
 	this.activate();
 	this.sanityCheck();
 	this.setAngleInternal(angle);
-}
+};
 
 Body.prototype.velocity_func = function(gravity, damping, dt)
 {
@@ -1575,7 +1583,7 @@ Body.prototype.getVelAtWorldPoint = function(point)
 Body.prototype.getVelAtLocalPoint = function(point)
 {
 	return this.getVelAtPoint(vrotate(point, body.rot));
-}
+};
 
 Body.prototype.eachShape = function(func)
 {
