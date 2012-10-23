@@ -106,7 +106,6 @@ Buoyancy.prototype.update = function(dt)
 };
 
 Buoyancy.prototype.waterPreSolve = function(arb, space, ptr) {
-	
 	var shapes = arb.getShapes();
 	var water = shapes[0];
 	var poly = shapes[1];
@@ -158,7 +157,7 @@ Buoyancy.prototype.waterPreSolve = function(arb, space, ptr) {
 	body.applyImpulse( cp.v.mult(g, -displacedMass*dt), r);
 	
 	// Apply linear damping for the fluid drag.
-	var v_centroid = cp.v.add(body.v, cp.v.mult(cp.v.perp(r), body.w));
+	var v_centroid = cp.v.add(body.getVel(), cp.v.mult(cp.v.perp(r), body.w));
 	var k = 1; //k_scalar_body(body, r, cp.v.normalize_safe(v_centroid));
 	var damping = clippedArea*FLUID_DRAG*FLUID_DENSITY;
 	var v_coef = Math.exp(-damping*dt*k); // linear drag
@@ -171,7 +170,6 @@ Buoyancy.prototype.waterPreSolve = function(arb, space, ptr) {
 	
 	return true;
 };
-Buoyancy.prototype = Object.create(Demo.prototype);
 
 addDemo('Buoyancy', Buoyancy);
 

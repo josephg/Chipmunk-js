@@ -710,6 +710,7 @@ Shape.prototype.setFriction = function(u) { this.body.activate(); this.u = u; };
 Shape.prototype.setLayers = function(layers) { this.body.activate(); this.layers = layers; };
 Shape.prototype.setSensor = function(sensor) { this.body.activate(); this.sensor = sensor; };
 Shape.prototype.setCollisionType = function(collision_type) { this.body.activate(); this.collision_type = collision_type; };
+Shape.prototype.getBody = function() { return this.body; };
 
 Shape.prototype.active = function()
 {
@@ -1275,6 +1276,13 @@ PolyShape.prototype.containsVertPartial = function(vx, vy, n)
 	return true;
 };
 
+// These methods are provided for API compatibility with Chipmunk. I recommend against using
+// them - just access the poly.verts list directly.
+PolyShape.prototype.getNumVerts = function() { return this.verts.length / 2; };
+PolyShape.prototype.getVert = function(i)
+{
+	return new Vect(this.verts[i * 2], this.verts[i * 2 + 1]);
+};
 
 /* Copyright (c) 2007 Scott Lembcke
  * 
@@ -1402,6 +1410,9 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
 } else {
 	Body.prototype.sanityCheck = function(){};
 }
+
+Body.prototype.getPos = function() { return this.p; };
+Body.prototype.getVel = function() { return new Vect(this.vx, this.vy); };
 
 /// Returns true if the body is sleeping.
 Body.prototype.isSleeping = function()
@@ -1570,19 +1581,19 @@ Body.prototype.applyImpulse = function(j, r)
 
 Body.prototype.getVelAtPoint = function(r)
 {
-	return vadd(new Vect(this.vx, this.vy), vmult(vperp(r), body.w));
+	return vadd(new Vect(this.vx, this.vy), vmult(vperp(r), this.w));
 };
 
 /// Get the velocity on a body (in world units) at a point on the body in world coordinates.
 Body.prototype.getVelAtWorldPoint = function(point)
 {
-	return this.getVelAtPoint(vsub(point, body.p));
+	return this.getVelAtPoint(vsub(point, this.p));
 };
 
 /// Get the velocity on a body (in world units) at a point on the body in local coordinates.
 Body.prototype.getVelAtLocalPoint = function(point)
 {
-	return this.getVelAtPoint(vrotate(point, body.rot));
+	return this.getVelAtPoint(vrotate(point, this.rot));
 };
 
 Body.prototype.eachShape = function(func)
@@ -1596,7 +1607,7 @@ Body.prototype.eachConstraint = function(func)
 {
 	var constraint = this.constraintList;
 	while(constraint) {
-		var next = constraint.next(body);
+		var next = constraint.next(this);
 		func(constraint);
 		constraint = next;
 	}
@@ -2650,6 +2661,15 @@ var Arbiter = function(a, b) {
 	this.state = 'first coll';
 };
 
+Arbiter.prototype.getShapes = function()
+{
+	if (this.swappedColl){
+		return [this.b, this.a];
+	}else{
+		return [this.a, this.b];
+	}
+}
+
 /// Calculate the total impulse that was applied by this arbiter.
 /// This function should only be called from a post-solve, post-step or cpBodyEachArbiter callback.
 Arbiter.prototype.totalImpulse = function()
@@ -3452,6 +3472,8 @@ var Space = cp.Space = function() {
 	// Cache the collideShapes callback function for the space.
 	this.collideShapes = this.makeCollideShapes();
 };
+
+Space.prototype.getCurrentTimeStep = function() { return this.curr_dt; };
 
 /// returns true from inside a callback and objects cannot be added/removed.
 Space.prototype.isLocked = function()
