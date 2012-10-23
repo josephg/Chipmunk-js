@@ -69,7 +69,7 @@ var min, max;
 if (typeof window === 'object' && window.navigator.userAgent.indexOf('Firefox') > -1){
 	// On firefox, Math.min and Math.max are really fast:
 	// http://jsperf.com/math-vs-greater-than/8
- 	min = Math.min;
+	min = Math.min;
 	max = Math.max;
 } else {
 	// On chrome and safari, Math.min / max are slooow. The ternery operator above is faster
