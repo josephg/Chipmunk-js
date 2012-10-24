@@ -1295,17 +1295,17 @@ PolyShape.prototype.getVert = function(i)
 };
 
 /* Copyright (c) 2007 Scott Lembcke
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -1327,7 +1327,7 @@ var Body = cp.Body = function(m, i) {
 	//this.m;
 	/// Mass inverse.
 	//this.m_inv;
-	
+
 	/// Moment of inertia of the body.
 	/// Must agree with cpBody.i_inv! Use body.setMoment() when changing the moment for this reason.
 	//this.i;
@@ -1340,7 +1340,7 @@ var Body = cp.Body = function(m, i) {
 	this.vx = this.vy = 0;
 	/// Force acting on the rigid body's center of gravity.
 	this.f = new Vect(0,0);
-	
+
 	/// Rotation of the body around it's center of gravity in radians.
 	/// Must agree with cpBody.rot! Use cpBodySetAngle() when changing the angle for this reason.
 	//this.a;
@@ -1348,26 +1348,26 @@ var Body = cp.Body = function(m, i) {
 	this.w = 0;
 	/// Torque applied to the body around it's center of gravity.
 	this.t = 0;
-	
+
 	/// Cached unit length vector representing the angle of the body.
 	/// Used for fast rotations using cpvrotate().
 	//cpVect rot;
-	
+
 	/// Maximum velocity allowed when updating the velocity.
 	this.v_limit = Infinity;
 	/// Maximum rotational rate (in radians/second) allowed when updating the angular velocity.
 	this.w_limit = Infinity;
-	
+
 	// This stuff is all private.
 	this.v_biasx = this.v_biasy = 0;
 	this.w_bias = 0;
-	
+
 	this.space = null;
-	
+
 	this.shapeList = [];
 	this.arbiterList = null; // These are both wacky linked lists.
 	this.constraintList = null;
-	
+
 	// This stuff is used to track information on the collision graph.
 	this.nodeRoot = null;
 	this.nodeNext = null;
@@ -1402,7 +1402,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
 	{
 		assert(this.m === this.m && this.m_inv === this.m_inv, "Body's mass is invalid.");
 		assert(this.i === this.i && this.i_inv === this.i_inv, "Body's moment is invalid.");
-		
+
 		v_assert_sane(this.p, "Body's position is invalid.");
 		v_assert_sane(this.f, "Body's force is invalid.");
 		assert(this.vx === this.vx && Math.abs(this.vx) !== Infinity, "Body's velocity is invalid.");
@@ -1411,9 +1411,9 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
 		assert(this.a === this.a && Math.abs(this.a) !== Infinity, "Body's angle is invalid.");
 		assert(this.w === this.w && Math.abs(this.w) !== Infinity, "Body's angular velocity is invalid.");
 		assert(this.t === this.t && Math.abs(this.t) !== Infinity, "Body's torque is invalid.");
-		
+
 		v_assert_sane(this.rot, "Internal error: Body's rotation vector is invalid.");
-		
+
 		assert(this.v_limit === this.v_limit, "Body's velocity limit is invalid.");
 		assert(this.w_limit === this.w_limit, "Body's angular velocity limit is invalid.");
 	};
@@ -1423,6 +1423,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
 
 Body.prototype.getPos = function() { return this.p; };
 Body.prototype.getVel = function() { return new Vect(this.vx, this.vy); };
+Body.prototype.getAngVel = function() { return this.w; };
 
 /// Returns true if the body is sleeping.
 Body.prototype.isSleeping = function()
@@ -1486,7 +1487,7 @@ var filterConstraints = function(node, body, filter)
 	} else {
 		node.next_b = filterConstraints(node.next_b, body, filter);
 	}
-	
+
 	return node;
 };
 
@@ -1503,14 +1504,14 @@ Body.prototype.setPos = function(pos)
 	this.p = pos;
 };
 
-Body.prototype.setVelocity = function(velocity)
+Body.prototype.setVel = function(velocity)
 {
 	this.activate();
 	this.vx = velocity.x;
 	this.vy = velocity.y;
 };
 
-Body.prototype.setAngularVelocity = function(w)
+Body.prototype.setAngVel = function(w)
 {
 	this.activate();
 	this.w = w;
@@ -1546,26 +1547,26 @@ Body.prototype.velocity_func = function(gravity, damping, dt)
 	var scale = (lensq > v_limit*v_limit) ? v_limit / Math.sqrt(len) : 1;
 	this.vx = vx * scale;
 	this.vy = vy * scale;
-	
+
 	var w_limit = this.w_limit;
 	this.w = clamp(this.w*damping + this.t*this.i_inv*dt, -w_limit, w_limit);
-	
+
 	this.sanityCheck();
 };
 
 Body.prototype.position_func = function(dt)
 {
 	//this.p = vadd(this.p, vmult(vadd(this.v, this.v_bias), dt));
-	
+
 	//this.p = this.p + (this.v + this.v_bias) * dt;
 	this.p.x += (this.vx + this.v_biasx) * dt;
 	this.p.y += (this.vy + this.v_biasy) * dt;
 
 	this.setAngleInternal(this.a + (this.w + this.w_bias)*dt);
-	
+
 	this.v_biasx = this.v_biasy = 0;
 	this.w_bias = 0;
-	
+
 	this.sanityCheck();
 };
 
@@ -1628,10 +1629,10 @@ Body.prototype.eachArbiter = function(func)
 	var arb = this.arbiterList;
 	while(arb){
 		var next = arb.next(this);
-		
+
 		arb.swappedColl = (this === arb.body_b);
 		func(arb);
-		
+
 		arb = next;
 	}
 };
