@@ -3546,7 +3546,7 @@ Space.prototype.setDefaultCollisionHandler = function(begin, preSolve, postSolve
 
 Space.prototype.lookupHandler = function(a, b)
 {
-	return this.collisionHandlers[hashPair(a, b)] || this.defaultHandler;
+    return this.collisionHandlers[hashPair(a, b)] || this.collisionHandlers[hashPair(b, a)] || this.defaultHandler;
 };
 
 // **** Body, Shape, and Joint Management
