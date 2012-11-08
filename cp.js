@@ -1236,7 +1236,7 @@ PolyShape.prototype.segmentQuery = function(a, b)
 };
 
 
-PolyShape.getNumVerts = function()
+PolyShape.prototype.getNumVerts = function()
 {
 	return this.verts.length/2;
 };
