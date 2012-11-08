@@ -1125,7 +1125,7 @@ var BoxShape2 = cp.BoxShape2 = function(body, box)
 		box.l, box.b,
 		box.l, box.t,
 		box.r, box.t,
-		box.r, box.b,
+		box.r, box.b
 	];
 	
 	return new PolyShape(body, verts, vzero);
