@@ -1235,17 +1235,17 @@ PolyShape.prototype.segmentQuery = function(a, b)
 	}
 };
 
-/*
+
 PolyShape.getNumVerts = function()
 {
-	return this.verts.length;
-};*/
+	return this.verts.length/2;
+};
 
-/*
+
 PolyShape.prototype.getVert = function(idx)
 {
-	return this.verts[idx];
-};*/
+	return new Vect(this.verts[idx*2],this.verts[idx*2+1]);
+};
 
 PolyShape.prototype.valueOnAxis = function(n, d)
 {
