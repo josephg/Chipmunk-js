@@ -1235,17 +1235,17 @@ PolyShape.prototype.segmentQuery = function(a, b)
 	}
 };
 
-
-PolyShape.prototype.getNumVerts = function()
+/*
+PolyShape.getNumVerts = function()
 {
-	return this.verts.length/2;
-};
+	return this.verts.length;
+};*/
 
-
+/*
 PolyShape.prototype.getVert = function(idx)
 {
-	return new Vect(this.verts[idx*2],this.verts[idx*2+1]);
-};
+	return this.verts[idx];
+};*/
 
 PolyShape.prototype.valueOnAxis = function(n, d)
 {
@@ -1544,7 +1544,7 @@ Body.prototype.velocity_func = function(gravity, damping, dt)
 	//this.vx = v.x; this.vy = v.y;
 	var v_limit = this.v_limit;
 	var lensq = vx * vx + vy * vy;
-	var scale = (lensq > v_limit*v_limit) ? v_limit / Math.sqrt(len) : 1;
+	var scale = (lensq > v_limit*v_limit) ? v_limit / Math.sqrt(lensq) : 1;
 	this.vx = vx * scale;
 	this.vy = vy * scale;
 
