@@ -1235,17 +1235,17 @@ PolyShape.prototype.segmentQuery = function(a, b)
 	}
 };
 
-
-PolyShape.prototype.getNumVerts = function()
+/*
+PolyShape.getNumVerts = function()
 {
-	return this.verts.length/2;
-};
+	return this.verts.length;
+};*/
 
-
+/*
 PolyShape.prototype.getVert = function(idx)
 {
-	return new Vect(this.verts[idx*2],this.verts[idx*2+1]);
-};
+	return this.verts[idx];
+};*/
 
 PolyShape.prototype.valueOnAxis = function(n, d)
 {
@@ -1544,7 +1544,7 @@ Body.prototype.velocity_func = function(gravity, damping, dt)
 	//this.vx = v.x; this.vy = v.y;
 	var v_limit = this.v_limit;
 	var lensq = vx * vx + vy * vy;
-	var scale = (lensq > v_limit*v_limit) ? v_limit / Math.sqrt(len) : 1;
+	var scale = (lensq > v_limit*v_limit) ? v_limit / Math.sqrt(lensq) : 1;
 	this.vx = vx * scale;
 	this.vy = vy * scale;
 
@@ -4351,17 +4351,17 @@ Space.prototype.shapeQuery = function(shape, func)
 };
 
 /* Copyright (c) 2007 Scott Lembcke
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -4370,7 +4370,7 @@ Space.prototype.shapeQuery = function(shape, func)
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
+
 // **** Post Step Callback Functions
 
 /// Schedule a post-step callback to be called when cpSpaceStep() finishes.
@@ -4379,7 +4379,7 @@ Space.prototype.addPostStepCallback = function(func)
 	assertSoft(this.locked,
 		"Adding a post-step callback when the space is not locked is unnecessary. " +
 		"Post-step callbacks will not called until the end of the next call to cpSpaceStep() or the next query.");
-	
+
 	this.postStepCallbacks.push(func);
 };
 
@@ -4404,15 +4404,15 @@ Space.prototype.unlock = function(runPostStep)
 {
 	this.locked--;
 	assert(this.locked >= 0, "Internal Error: Space lock underflow.");
-	
+
 	if(!this.locked && runPostStep){
 		var waking = this.rousedBodies;
 		for(var i=0; i<waking.length; i++){
 			this.activateBody(waking[i]);
 		}
-		
+
 		waking.length = 0;
-		
+
 		this.runPostStepCallbacks();
 	}
 };
@@ -4441,9 +4441,9 @@ var ContactBuffer = function(stamp, splice)
 Space.prototype.pushFreshContactBuffer = function()
 {
 	var stamp = this.stamp;
-	
+
 	var head = this.contactBuffersHead;
-	
+
 	if(!head){
 		// No buffers have been allocated, make one
 		this.contactBuffersHead = new ContactBuffer(stamp, null);
@@ -4467,7 +4467,7 @@ cpContactBufferGetArray(cpSpace *space)
 		// contact buffer could overflow on the next collision, push a fresh one.
 		space.pushFreshContactBuffer();
 	}
-	
+
 	cpContactBufferHeader *head = space.contactBuffersHead;
 	return ((cpContactBuffer *)head)->contacts + head.numContacts;
 }
@@ -4495,13 +4495,13 @@ cpSpaceArbiterSetTrans(cpShape **shapes, cpSpace *space)
 		// arbiter pool is exhausted, make more
 		int count = CP_BUFFER_BYTES/sizeof(cpArbiter);
 		cpAssertHard(count, "Internal Error: Buffer size too small.");
-		
+
 		cpArbiter *buffer = (cpArbiter *)cpcalloc(1, CP_BUFFER_BYTES);
 		cpArrayPush(space.allocatedBuffers, buffer);
-		
+
 		for(int i=0; i<count; i++) cpArrayPush(space.pooledArbiters, buffer + i);
 	}
-	
+
 	return cpArbiterInit((cpArbiter *)cpArrayPop(space.pooledArbiters), shapes[0], shapes[1]);
 }*/
 
@@ -4525,26 +4525,26 @@ Space.prototype.makeCollideShapes = function()
 			// Don't collide objects that don't share at least on layer.
 			|| !(a.layers & b.layers)
 		) return;
-		
+
 		var handler = space.lookupHandler(a.collision_type, b.collision_type);
-		
+
 		var sensor = a.sensor || b.sensor;
 		if(sensor && handler === defaultCollisionHandler) return;
-		
+
 		// Shape 'a' should have the lower shape type. (required by cpCollideShapes() )
 		if(a.collisionCode > b.collisionCode){
 			var temp = a;
 			a = b;
 			b = temp;
 		}
-		
+
 		// Narrow-phase collision detection.
 		//cpContact *contacts = cpContactBufferGetArray(space);
 		//int numContacts = cpCollideShapes(a, b, contacts);
 		var contacts = collideShapes(a, b);
 		if(contacts.length === 0) return; // Shapes are not colliding.
 		//cpSpacePushContacts(space, numContacts);
-		
+
 		// Get an arbiter from space.arbiterSet for the two shapes.
 		// This is where the persistant contact magic comes from.
 		var arbHash = hashPair(a.hashid, b.hashid);
@@ -4554,15 +4554,15 @@ Space.prototype.makeCollideShapes = function()
 		}
 
 		arb.update(contacts, handler, a, b);
-		
+
 		// Call the begin function first if it's the first step
 		if(arb.state == 'first coll' && !handler.begin(arb, space)){
 			arb.ignore(); // permanently ignore the collision until separation
 		}
-		
+
 		if(
 			// Ignore the arbiter if it has been flagged
-			(arb.state !== 'ignore') && 
+			(arb.state !== 'ignore') &&
 			// Call preSolve
 			handler.preSolve(arb, space) &&
 			// Process, but don't add collisions for sensors.
@@ -4571,14 +4571,14 @@ Space.prototype.makeCollideShapes = function()
 			space.arbiters.push(arb);
 		} else {
 			//cpSpacePopContacts(space, numContacts);
-			
+
 			arb.contacts = null;
-			
+
 			// Normally arbiters are set as used after calling the post-solve callback.
 			// However, post-solve callbacks are not called for sensors or arbiters rejected from pre-solve.
 			if(arb.state !== 'ignore') arb.state = 'normal';
 		}
-		
+
 		// Time stamp the arbiter so we know it was used recently.
 		arb.stamp = space.stamp;
 	};
@@ -4588,9 +4588,9 @@ Space.prototype.makeCollideShapes = function()
 Space.prototype.arbiterSetFilter = function(arb)
 {
 	var ticks = this.stamp - arb.stamp;
-	
+
 	var a = arb.body_a, b = arb.body_b;
-	
+
 	// TODO should make an arbiter state for this so it doesn't require filtering arbiters for
 	// dangling body pointers on body removal.
 	// Preserve arbiters on sensors and rejected arbiters for sleeping objects.
@@ -4601,20 +4601,20 @@ Space.prototype.arbiterSetFilter = function(arb)
 	){
 		return true;
 	}
-	
+
 	// Arbiter was used last frame, but not this one
 	if(ticks >= 1 && arb.state != 'cached'){
 		arb.callSeparate(this);
 		arb.state = 'cached';
 	}
-	
+
 	if(ticks >= this.collisionPersistence){
 		arb.contacts = null;
-		
+
 		//cpArrayPush(this.pooledArbiters, arb);
 		return false;
 	}
-	
+
 	return true;
 };
 
@@ -4633,21 +4633,24 @@ Space.prototype.step = function(dt)
 	if(dt === 0) return;
 
 	assert(vzero.x === 0 && vzero.y === 0, "vzero is invalid");
-	
+
 	this.stamp++;
-	
+
 	var prev_dt = this.curr_dt;
 	this.curr_dt = dt;
-		
+
+    var i;
+    var j;
+    var hash;
 	var bodies = this.bodies;
 	var constraints = this.constraints;
 	var arbiters = this.arbiters;
-	
+
 	// Reset and empty the arbiter lists.
-	for(var i=0; i<arbiters.length; i++){
+	for(i=0; i<arbiters.length; i++){
 		var arb = arbiters[i];
 		arb.state = 'normal';
-		
+
 		// If both bodies are awake, unthread the arbiter from the contact graph.
 		if(!arb.body_a.isSleeping() && !arb.body_b.isSleeping()){
 			arb.unthread();
@@ -4657,23 +4660,22 @@ Space.prototype.step = function(dt)
 
 	this.lock(); {
 		// Integrate positions
-		for(var i=0; i<bodies.length; i++){
-			var body = bodies[i];
-			body.position_func(dt);
+		for(i=0; i<bodies.length; i++){
+			bodies[i].position_func(dt);
 		}
-		
+
 		// Find colliding pairs.
 		//this.pushFreshContactBuffer();
 		this.activeShapes.each(updateFunc);
 		this.activeShapes.reindexQuery(this.collideShapes);
 	} this.unlock(false);
-	
+
 	// Rebuild the contact graph (and detect sleeping components if sleeping is enabled)
 	this.processComponents(dt);
-	
+
 	this.lock(); {
 		// Clear out old cached arbiters and call separate callbacks
-		for(var hash in this.cachedArbiters) {
+		for(hash in this.cachedArbiters) {
 			if(!this.arbiterSetFilter(this.cachedArbiters[hash])) {
 				delete this.cachedArbiters[hash];
 			}
@@ -4682,58 +4684,54 @@ Space.prototype.step = function(dt)
 		// Prestep the arbiters and constraints.
 		var slop = this.collisionSlop;
 		var biasCoef = 1 - Math.pow(this.collisionBias, dt);
-		for(var i=0; i<arbiters.length; i++){
+		for(i=0; i<arbiters.length; i++){
 			arbiters[i].preStep(dt, slop, biasCoef);
 		}
 
-		for(var i=0; i<constraints.length; i++){
+		for(i=0; i<constraints.length; i++){
 			var constraint = constraints[i];
-			
+
 			constraint.preSolve(this);
 			constraint.preStep(dt);
 		}
-	
+
 		// Integrate velocities.
 		var damping = Math.pow(this.damping, dt);
 		var gravity = this.gravity;
-		for(var i=0; i<bodies.length; i++){
-			var body = bodies[i];
-			body.velocity_func(gravity, damping, dt);
+		for(i=0; i<bodies.length; i++){
+			bodies[i].velocity_func(gravity, damping, dt);
 		}
-		
+
 		// Apply cached impulses
 		var dt_coef = (prev_dt === 0 ? 0 : dt/prev_dt);
-		for(var i=0; i<arbiters.length; i++){
+		for(i=0; i<arbiters.length; i++){
 			arbiters[i].applyCachedImpulse(dt_coef);
 		}
-		
-		for(var i=0; i<constraints.length; i++){
-			var constraint = constraints[i];
-			constraint.applyCachedImpulse(dt_coef);
+
+		for(i=0; i<constraints.length; i++){
+			constraints[i].applyCachedImpulse(dt_coef);
 		}
-		
+
 		// Run the impulse solver.
 		//cpSpaceArbiterApplyImpulseFunc applyImpulse = this.arbiterApplyImpulse;
-		for(var i=0; i<this.iterations; i++){
-			for(var j=0; j<arbiters.length; j++){
+		for(i=0; i<this.iterations; i++){
+			for(j=0; j<arbiters.length; j++){
 				arbiters[j].applyImpulse();
 			}
-				
-			for(var j=0; j<constraints.length; j++){
+
+			for(j=0; j<constraints.length; j++){
 				constraints[j].applyImpulse();
 			}
 		}
-		
+
 		// Run the constraint post-solve callbacks
-		for(var i=0; i<constraints.length; i++){
+		for(i=0; i<constraints.length; i++){
 			constraints[i].postSolve(this);
 		}
-		
-		// run the post-solve callbacks
-		for(var i=0; i<arbiters.length; i++){
-			var arb = arbiters[i];
 
-			arb.handler.postSolve(arb, this);
+		// run the post-solve callbacks
+		for(i=0; i<arbiters.length; i++){
+			arbiters[i].handler.postSolve(arb, this);
 		}
 	} this.unlock(true);
 };
