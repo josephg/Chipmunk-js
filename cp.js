@@ -1235,18 +1235,6 @@ PolyShape.prototype.segmentQuery = function(a, b)
 	}
 };
 
-/*
-PolyShape.getNumVerts = function()
-{
-	return this.verts.length;
-};*/
-
-/*
-PolyShape.prototype.getVert = function(idx)
-{
-	return this.verts[idx];
-};*/
-
 PolyShape.prototype.valueOnAxis = function(n, d)
 {
 	var verts = this.tVerts;
