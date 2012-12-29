@@ -46,7 +46,7 @@ cp.js: $(jsfiles) $(constraintfiles)
 	echo "})();" >> $@
 
 cp.min.js: cp.js
-	../node-v0.8.16-linux-x64/lib/node_modules/uglify-js/bin/uglifyjs $+ > $@
+	uglifyjs $+ > $@
 
 bench.js: $(jsfiles) $(constraintfiles) benchmark/mersenne.js benchmark/bench.js
 	cat $+ > $@
