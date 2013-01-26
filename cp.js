@@ -1265,9 +1265,9 @@ PolyShape.prototype.containsVertPartial = function(vx, vy, n)
 	var axes = this.tAxes;
 	
 	for(var i=0; i<axes.length; i++){
-		var n = axes[i].n;
-		if(vdot(n, n) < 0) continue;
-		var dist = vdot2(n.x, n.y, vx, vy) - axes[i].d;
+		var n2 = axes[i].n;
+		if(vdot(n2, n) < 0) continue;
+		var dist = vdot2(n2.x, n2.y, vx, vy) - axes[i].d;
 		if(dist > 0) return false;
 	}
 	
