@@ -13,6 +13,7 @@ var Demo = function() {
 	this.remainder = 0;
 	this.fps = 0;
 	this.mouse = v(0,0);
+	this.timeTaken = 0;
 
 	var self = this;
 	var canvas2point = this.canvas2point = function(x, y) {
@@ -138,6 +139,7 @@ Demo.prototype.drawInfo = function() {
 	}
 	this.maxContacts = this.maxContacts ? Math.max(this.maxContacts, contacts) : contacts;
 	this.ctx.fillText("Contact points: " + contacts + " (Max: " + this.maxContacts + ")", 10, 140, maxWidth);
+	this.ctx.fillText("Time taken: " + this.timeTaken, 10, 170, maxWidth);
 
 	if (this.message) {
 		this.ctx.fillText(this.message, 10, this.height - 50, maxWidth);
@@ -216,6 +218,25 @@ Demo.prototype.run = function() {
 	step();
 };
 
+var soon = function(fn) { setTimeout(fn, 1); };
+
+Demo.prototype.benchmark = function() {
+	this.draw();
+
+	var self = this;
+	soon(function() {
+		console.log("Benchmarking... waiting for the space to come to rest");
+		var start = Date.now();
+		while (self.space.activeShapes.count !== 0) {
+			self.update(1/60);
+		}
+		var end = Date.now();
+
+		console.log('took ' + (end - start) + 'ms');
+		self.draw();
+	});
+};
+
 Demo.prototype.stop = function() {
 	this.running = false;
 };
@@ -241,13 +262,10 @@ Demo.prototype.step = function() {
 	// has a slow computer, we'll just slow the simulation down.
 	dt = Math.min(dt, 1/25);
 
-	this.remainder += dt;
+	this.update(1/60);
 
-	while(this.remainder > 1/60) {
-		// Chipmunk works better with a constant framerate, because it can cache some results.
-		this.remainder -= 1/60;
-		this.update(1/60);
-	}
+	var afterUpdate = Date.now();
+	this.timeTaken += afterUpdate - now;
 
 	// Only redraw if the simulation isn't asleep.
 	if (lastNumActiveShapes > 0 || Demo.resized) {

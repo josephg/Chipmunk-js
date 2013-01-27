@@ -48,6 +48,7 @@ var PyramidTopple = function()
 	space.collisionSlop = 0.5;
 	
 	this.addFloor();
+	this.addWalls();
 	
 	// Add the dominoes.
 	var n = 12;
@@ -68,6 +69,14 @@ var PyramidTopple = function()
 			}
 		}
 	}
+
+	// Add a circle to knock the dominoes down
+	/*
+	var body = space.addBody(new cp.Body(2, cp.momentForCircle(2, 0, 5, v(0,0))));
+	body.setPos(v(65, 100));
+	var shape = space.addShape(new cp.CircleShape(body, 5, v(0,0)));
+	shape.setElasticity(0);
+	*/
 };
 
 PyramidTopple.prototype = Object.create(Demo.prototype);
