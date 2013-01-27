@@ -513,6 +513,7 @@ print('contacts: ' + numContacts);
 print('node: ' + numNodes);
 print('leaf: ' + numLeaves);
 print('bb: ' + numBB);
+print('pairs: ' + numPairs);
 print('applyImpulse: ' + numApplyImpulse);
 print('applyContact: ' + numApplyContact);
 
@@ -521,6 +522,7 @@ print(numContacts);
 print(numNodes);
 print(numLeaves);
 print(numBB);
+print(numPairs);
 print(numApplyImpulse);
 print(numApplyContact);
 
