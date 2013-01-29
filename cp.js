@@ -2511,18 +2511,16 @@ BBTree.prototype.optimize = function()
 var nodeRender = function(node, depth)
 {
 	if(!node.isLeaf && depth <= 10){
-		nodeRender(node.a, depth + 1);
-		nodeRender(node.b, depth + 1);
+		nodeRender(node.A, depth + 1);
+		nodeRender(node.B, depth + 1);
 	}
-	
-//	var bb = node.bb;
 	
 	var str = '';
 	for(var i = 0; i < depth; i++) {
 		str += ' ';
 	}
 
-//	console.log(str + bb.b + ' ' + bb.t);
+	console.log(str + node.bb_b + ' ' + node.bb_t);
 };
 
 BBTree.prototype.log = function(){
@@ -4134,8 +4132,8 @@ Body.prototype.sleepWithGroup = function(group){
 		return;
 	}
 	
-	for(var i = 0; i < body.shapeList.length; i++){
-		body.shapeList.update(this.p, this.rot);
+	for(var i = 0; i < this.shapeList.length; i++){
+		this.shapeList[i].update(this.p, this.rot);
 	}
 	space.deactivateBody(this);
 	
