@@ -90,5 +90,5 @@ PyramidTopple.prototype.update = function(dt)
 	}
 };
 
-addDemo('PyramidTopple', PyramidTopple);
+addDemo('Pyramid Topple', PyramidTopple);
 

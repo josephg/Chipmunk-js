@@ -13,7 +13,8 @@ var Demo = function() {
 	this.remainder = 0;
 	this.fps = 0;
 	this.mouse = v(0,0);
-	this.timeTaken = 0;
+	this.simulationTime = 0;
+	this.drawTime = 0;
 
 	var self = this;
 	var canvas2point = this.canvas2point = function(x, y) {
@@ -148,7 +149,8 @@ Demo.prototype.drawInfo = function() {
 	}
 	this.maxContacts = this.maxContacts ? Math.max(this.maxContacts, contacts) : contacts;
 	this.ctx.fillText("Contact points: " + contacts + " (Max: " + this.maxContacts + ")", 10, 140, maxWidth);
-	this.ctx.fillText("Time taken: " + this.timeTaken, 10, 170, maxWidth);
+	this.ctx.fillText("Simulation time: " + this.simulationTime + " ms", 10, 170, maxWidth);
+	this.ctx.fillText("Draw time: " + this.drawTime + " ms", 10, 200, maxWidth);
 
 	if (this.message) {
 		this.ctx.fillText(this.message, 10, this.height - 50, maxWidth);
@@ -251,7 +253,6 @@ Demo.prototype.stop = function() {
 };
 
 Demo.prototype.step = function() {
-	var now = Date.now();
 	var dt = (now - this.lastStep) / 1000;
 	this.lastStep = now;
 
@@ -271,14 +272,15 @@ Demo.prototype.step = function() {
 	// has a slow computer, we'll just slow the simulation down.
 	dt = Math.min(dt, 1/25);
 
+	var now = Date.now();
 	this.update(1/60);
-
-	var afterUpdate = Date.now();
-	this.timeTaken += afterUpdate - now;
+	this.simulationTime += Date.now() - now;
 
 	// Only redraw if the simulation isn't asleep.
 	if (lastNumActiveShapes > 0 || Demo.resized) {
+		now = Date.now();
 		this.draw();
+		this.drawTime += Date.now() - now;
 		Demo.resized = false;
 	}
 };
@@ -321,6 +323,12 @@ var drawLine = function(ctx, point2canvas, a, b) {
 	ctx.moveTo(a.x, a.y);
 	ctx.lineTo(b.x, b.y);
 	ctx.stroke();
+};
+
+var drawRect = function(ctx, point2canvas, pos, size) {
+	var pos_ = point2canvas(pos);
+	var size_ = cp.v.sub(point2canvas(cp.v.add(pos, size)), pos_);
+	ctx.fillRect(pos_.x, pos_.y, size_.x, size_.y);
 };
 
 var springPoints = [

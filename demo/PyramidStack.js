@@ -58,7 +58,6 @@ var PyramidStack = function() {
 
 PyramidStack.prototype = Object.create(Demo.prototype);
 
-/*
 PyramidStack.prototype.update = function(dt)
 {
 	var steps = 3;
@@ -66,7 +65,7 @@ PyramidStack.prototype.update = function(dt)
 	for (var i = 0; i < 3; i++){
 		this.space.step(dt);
 	}
-};*/
+};
 
-addDemo('PyramidStack', PyramidStack);
+addDemo('Pyramid Stack', PyramidStack);
 
