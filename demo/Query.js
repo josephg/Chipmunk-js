@@ -113,9 +113,13 @@ Query.prototype.draw = function() {
 		this.message += "Segment Query: (None)";
 	}
 
-	// Draw a red bounding box around the shape under the mouse.
-	var mouseShape = this.space.pointQueryFirst(this.mouse, cp.ALL_LAYERS, cp.NO_GROUP);
-	if(mouseShape) this.drawBB(mouseShape.getBB(), null, 'red');
+	var nearestInfo = this.space.nearestPointQueryNearest(this.mouse, 100, cp.ALL_LAYERS, cp.NO_GROUP);
+	if (nearestInfo) {
+		this.drawSegment(this.mouse, nearestInfo.p, "grey");
+
+		// Draw a red bounding box around the shape under the mouse.
+		if(nearestInfo.d < 0) this.drawBB(nearestInfo.shape.getBB(), null, 'red');
+	}
 };
 
 Query.prototype.update = function(){};
