@@ -215,6 +215,138 @@ var momentForBox2 = cp.momentForBox2 = function(m, box)
 	return momentForBox(m, width, height) + m*vlengthsq(offset);
 };
 
+// Quick hull
+
+var loopIndexes = cp.loopIndexes = function(verts)
+{
+	var start = 0, end = 0;
+	var minx, miny, maxx, maxy;
+	minx = maxx = verts[0];
+	miny = maxy = verts[1];
+	
+	var count = verts.length >> 1;
+  for(var i=1; i<count; i++){
+		var x = verts[i*2];
+		var y = verts[i*2 + 1];
+		
+    if(x < minx || (x == minx && y < miny)){
+			minx = x;
+			miny = y;
+      start = i;
+    }
+		if(x > maxx || (x == maxx && y > maxy)){
+			maxx = x;
+			maxy = y;
+			end = i;
+		}
+	}
+	return [start, end];
+};
+
+var SWAP = function(arr, idx1, idx2)
+{
+	var tmp = arr[idx1*2];
+	arr[idx1*2] = arr[idx2*2];
+	arr[idx2*2] = tmp;
+
+	tmp = arr[idx1*2+1];
+	arr[idx1*2+1] = arr[idx2*2+1];
+	arr[idx2*2+1] = tmp;
+};
+
+var QHullPartition = function(verts, offs, count, a, b, tol)
+{
+	if(count === 0) return 0;
+	
+	var max = 0;
+	var pivot = offs;
+	
+	var delta = vsub(b, a);
+	var valueTol = tol * vlength(delta);
+	
+	var head = offs;
+	for(var tail = offs+count-1; head <= tail;){
+		var v = new Vect(verts[head * 2], verts[head * 2 + 1]);
+		var value = vcross(delta, vsub(v, a));
+		if(value > valueTol){
+			if(value > max){
+				max = value;
+				pivot = head;
+			}
+			
+			head++;
+		} else {
+			SWAP(verts, head, tail);
+			tail--;
+		}
+	}
+	
+	// move the new pivot to the front if it's not already there.
+	if(pivot != offs) SWAP(verts, offs, pivot);
+	return head - offs;
+};
+
+var QHullReduce = function(tol, verts, offs, count, a, pivot, b, resultPos)
+{
+	if(count < 0){
+		return 0;
+	} else if(count == 0) {
+		verts[resultPos*2] = pivot.x;
+		verts[resultPos*2+1] = pivot.y;
+		return 1;
+	} else {
+		var left_count = QHullPartition(verts, offs, count, a, pivot, tol);
+		var left = new Vect(verts[offs*2], verts[offs*2+1]);
+		var index = QHullReduce(tol, verts, offs + 1, left_count - 1, a, left, pivot, resultPos);
+		
+		var pivotPos = resultPos + index++;
+		verts[pivotPos*2] = pivot.x;
+		verts[pivotPos*2+1] = pivot.y;
+		
+		var right_count = QHullPartition(verts, offs + left_count, count - left_count, pivot, b, tol);
+		var right = new Vect(verts[(offs+left_count)*2], verts[(offs+left_count)*2+1]);
+		return index + QHullReduce(tol, verts, offs + left_count + 1, right_count - 1, pivot, right, b, resultPos + index);
+	}
+};
+
+// QuickHull seemed like a neat algorithm, and efficient-ish for large input sets.
+// My implementation performs an in place reduction using the result array as scratch space.
+var convexHull = cp.convexHull = function(verts, result, tol)
+{
+	if(result){
+		// Copy the line vertexes into the empty part of the result polyline to use as a scratch buffer.
+		for (var i = 0; i < verts.length; i++){
+			result[i] = verts[i];
+		}
+	} else {
+		// If a result array was not specified, reduce the input instead.
+		result = verts;
+	}
+	
+	// Degenerate case, all poins are the same.
+	var indexes = loopIndexes(verts);
+	var start = indexes[0], end = indexes[1];
+	if(start == end){
+		//if(first) (*first) = 0;
+		return 1;
+	}
+	
+	SWAP(result, 0, start);
+	SWAP(result, 1, end == 0 ? start : end);
+	
+	var a = new Vect(result[0], result[1]);
+	var b = new Vect(result[2], result[3]);
+	
+	var count = verts.length >> 1;
+	//if(first) (*first) = start;
+	var resultCount = QHullReduce(tol, result, 2, count - 2, a, b, a, 1) + 1;
+	//assertSoft(cpPolyValidate(result, resultCount),
+	//	"Internal error: cpConvexHull() and cpPolyValidate() did not agree."
+	//	"Please report this error with as much info as you can.");
+	result.length = resultCount*2;
+	return resultCount;
+};
+
 /// Clamp @c f to be between @c min and @c max.
 var clamp = function(f, minv, maxv)
 {
@@ -1102,11 +1234,6 @@ var polyValidate = function(verts)
 /// The vertexes must be convex and have a clockwise winding.
 var PolyShape = cp.PolyShape = function(body, verts, offset)
 {
-	assert(verts.length >= 4, "Polygons require some verts");
-	assert(typeof(verts[0]) === 'number', 'Polygon verticies should be specified in a flattened list');
-	// Fail if the user attempts to pass a concave poly, or a bad winding.
-	assert(polyValidate(verts), "Polygon is concave or has a reversed winding.");
-	
 	this.setVerts(verts, offset);
 	this.type = 'poly';
 	Shape.call(this, body);
@@ -1127,6 +1254,13 @@ SplittingPlane.prototype.compare = function(v)
 
 PolyShape.prototype.setVerts = function(verts, offset)
 {
+	assert(verts.length >= 4, "Polygons require some verts");
+	assert(typeof(verts[0]) === 'number',
+			'Polygon verticies should be specified in a flattened list (eg [x1,y1,x2,y2,x3,y3,...])');
+
+	// Fail if the user attempts to pass a concave poly, or a bad winding.
+	assert(polyValidate(verts), "Polygon is concave or has a reversed winding. Consider using cpConvexHull()");
+	
 	var len = verts.length;
 	var numVerts = len >> 1;
 
