@@ -14,7 +14,7 @@ Check out the sexy [demos](http://dl.dropbox.com/u/2494815/demo/index.html)! (Su
 
 The API for Chipmunk-js is almost identical to chipmunk-physics. Except:
 
-- The `cp` prefix has gone
+- The `cp` prefix has been replaced by a `cp` namespace. (Eg, `cpvadd(a, b)` becomes `cp.vadd(a, b)`.)
 - Most functions are wrapped by their containing objects
 - Some functions took an array-and-length. Arrays are now all simply javascript arrays, and the length argument has been removed. Eg:
 
