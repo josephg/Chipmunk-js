@@ -6,6 +6,7 @@ This is a port of the [Chipmunk Physics](http://chipmunk-physics.net/) library t
 
 - It is slower than the C version (duh, its in javascript). Specifically, physics simulations using chipmunk-js runs about 3 times slower than the C equivalent.
 - I haven't implemented chipmunk's spatial hash, and I have no intention to do so.
+- The feature set is lagged a little from the real Chipmunk library. Chipmunk-js currently corresponds to Chipmunk *6.1.1* published in August 2012.
 
 # Usage
 
@@ -26,7 +27,7 @@ cp.momentForPoly(mass, verts, offset);
     ```
 
 - Lots of trivial getters and setters have been removed.
-- Lists of verticies are described using a flattened JS array of [*x1*,*y1*,*x2*,*y2*,...] instead of an array of objects. Ie, `[0,0, 0,1, 1,1, 1,0] instead of `[cp.v(0,0), cp.v(0,1), cp.v(1,1), cp.v(1,0)]'.
+- Lists of verticies are described using a flattened JS array of [*x1*,*y1*,*x2*,*y2*,...] instead of an array of objects. Ie, `[0,0, 0,1, 1,1, 1,0]` instead of `[cp.v(0,0), cp.v(0,1), cp.v(1,1), cp.v(1,0)]`.
 
 ## On a website
 
