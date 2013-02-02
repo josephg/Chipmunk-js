@@ -89,10 +89,6 @@ var Demo = function() {
 
 var canvas = Demo.prototype.canvas = document.getElementsByTagName('canvas')[0];
 
-canvas.style.position = "absolute";
-canvas.style.top = "0";
-canvas.style.left = "0";
-
 var ctx = Demo.prototype.ctx = canvas.getContext('2d');
 
 // The physics space size is 640x480, with the origin in the bottom left.
@@ -112,7 +108,7 @@ window.onresize = function(e) {
 };
 window.onresize();
 
-var requestAnimationFrame = window.requestAnimationFrame
+var raf = window.requestAnimationFrame
 	|| window.webkitRequestAnimationFrame
 	|| window.mozRequestAnimationFrame
 	|| window.oRequestAnimationFrame
@@ -223,7 +219,7 @@ Demo.prototype.run = function() {
 	var step = function() {
 		self.step();
 		if (self.running) {
-			requestAnimationFrame(step);
+			raf(step);
 		}
 	};
 

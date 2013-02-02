@@ -1,7 +1,82 @@
+<!doctype html>
+<style>
+	body {
+		margin: 0px;
+	}
+
+	#tabbar {
+		padding-top: 5px;
+		padding-bottom: 2px;
+		border: 0px;
+		border-bottom: 2px;
+		border-style: solid;
+		background-color: rgba(255,255,255,0.5);
+		border-color: #333;
+	}
+
+	#tabbar a {
+		padding: 2px 5px 2px 5px;
+		border-top: 2px;
+		border-right: 2px;
+		border-left: 2px;
+		border-bottom: 0px;
+		border-style: solid;
+		border-color: rgba(0,0,0,0);
+		color: #888;
+		text-decoration: none;
+	}
+
+	#tabbar .selected {
+		border-color: #333;
+		color: #333;
+	}
+
+	canvas { /* float below */
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: -1;
+	}
+
+</style>
+<div id="tabbar"></div>
 <canvas></canvas>
 <script src="../cp.js"></script>
 <script src="demo.js"></script>
+<script src="Convex.js"></script>
+<script src="Joints.js"></script>
+<script src="PyramidStack.js"></script>
 <script src="PyramidTopple.js"></script>
+<script src="Query.js"></script>
+<script src="ball.js"></script>
+<script src="buoyancy.js"></script>
 <script>
-(new PyramidTopple()).run();
+	var bar = document.getElementById('tabbar');
+
+	var current = null;
+
+	for (var i = 0; i < demos.length; i++) {
+		var tab = document.createElement('a');
+		tab.href = '#';
+		tab.className = 'deselected';
+		tab.textContent = demos[i].name;
+		demos[i].tab = tab;
+		tab.demo = demos[i].demo;
+
+		tab.onclick = function(){
+			for (var i = 0; i < demos.length; i++) {
+				demos[i].tab.className = 'deselected';
+			}
+			this.className = 'selected';
+
+			if (current) current.stop();
+			current = new this.demo();
+			current.run();
+			return false;
+		};
+
+		bar.appendChild(tab);
+	}
+
+	demos[Math.floor(Math.random() * demos.length)].tab.onclick();
 </script>
