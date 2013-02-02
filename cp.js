@@ -106,6 +106,21 @@ var deleteObjFromList = function(arr, obj)
 	}
 };
 
+var closestPointOnSegment = function(p, a, b)
+{
+	var delta = vsub(a, b);
+	var t = clamp01(vdot(delta, vsub(p, b))/vlengthsq(delta));
+	return vadd(b, vmult(delta, t));
+};
+
+var closestPointOnSegment2 = function(px, py, ax, ay, bx, by)
+{
+	var deltax = ax - bx;
+	var deltay = ay - by;
+	var t = clamp01(vdot2(deltax, deltay, px - bx, py - by)/vlengthsq2(deltax, deltay));
+	return new Vect(bx + deltax * t, by + deltay * t);
+};
+
 var momentForCircle = cp.momentForCircle = function(m, r1, r2, offset)
 {
 	return m*(0.5*(r1*r1 + r2*r2) + vlengthsq(offset));
@@ -118,10 +133,8 @@ var areaForCircle = cp.areaForCircle = function(r1, r2)
 
 var momentForSegment = cp.momentForSegment = function(m, a, b)
 {
-	var length = vlength(vsub(b, a));
-	var offset = vmult(vadd(a, b), 1/2);
-	
-	return m*(length*length/12 + vlengthsq(offset));
+	var offset = vmult(vadd(a, b), 0.5);
+	return m*(vdistsq(b, a)/12 + vlengthsq(offset));
 };
 
 var areaForSegment = cp.areaForSegment = function(a, b, r)
@@ -289,6 +302,11 @@ var vlength = cp.v.len = function(v)
 	return Math.sqrt(vdot(v, v));
 };
 
+var vlength2 = cp.v.len2 = function(x, y)
+{
+	return Math.sqrt(x*x + y*y);
+};
+
 /// Check if two vectors are equal. (Be careful when comparing floating point numbers!)
 var veql = cp.v.eql = function(v1, v2)
 {
@@ -407,6 +425,11 @@ var vunrotate = cp.v.unrotate = function(v1, v2)
 var vlengthsq = cp.v.lengthsq = function(v)
 {
 	return vdot(v, v);
+};
+
+var vlengthsq2 = cp.v.lengthsq2 = function(x, y)
+{
+	return x*x + y*y;
 };
 
 /// Linearly interpolate between v1 and v2.
@@ -746,6 +769,12 @@ Shape.prototype.update = function(pos, rot)
 	this.cacheData(pos, rot);
 };
 
+Shape.prototype.pointQuery = function(p)
+{
+	var info = this.nearestPointQuery(p);
+	if (info.d < 0) return info;
+};
+
 Shape.prototype.getBB = function()
 {
 	return new BB(this.bb_l, this.bb_b, this.bb_r, this.bb_t);
@@ -767,7 +796,8 @@ CP_DefineShapeStructProperty(cpLayers, layers, Layers, cpTrue);
 */
 
 /// Extended point query info struct. Returned from calling pointQuery on a shape.
-var PointQueryExtendedInfo = function(shape){
+var PointQueryExtendedInfo = function(shape)
+{
 	/// Shape that was hit, NULL if no collision occurred.
 	this.shape = shape;
 	/// Depth of the point inside the shape.
@@ -776,7 +806,18 @@ var PointQueryExtendedInfo = function(shape){
 	this.n = vzero;
 };
 
-var SegmentQueryInfo = function(shape, t, n){
+var NearestPointQueryInfo = function(shape, p, d)
+{
+	/// The nearest shape, NULL if no shape was within range.
+	this.shape = shape;
+	/// The closest point on the shape's surface. (in world space coordinates)
+	this.p = p;
+	/// The distance to the point. The distance is negative if the point is inside the shape.
+	this.d = d;
+};
+
+var SegmentQueryInfo = function(shape, t, n)
+{
 	/// The shape that was hit, NULL if no collision occured.
 	this.shape = shape;
 	/// The normalized distance along the query segment in the range [0, 1].
@@ -824,7 +865,7 @@ CircleShape.prototype.cacheData = function(p, rot)
 };
 
 /// Test if a point lies within a shape.
-CircleShape.prototype.pointQuery = function(p)
+/*CircleShape.prototype.pointQuery = function(p)
 {
 	var delta = vsub(p, this.tc);
 	var distsq = vlengthsq(delta);
@@ -838,6 +879,17 @@ CircleShape.prototype.pointQuery = function(p)
 		info.n = vmult(delta, 1/dist);
 		return info;
 	}
+};*/
+
+CircleShape.prototype.nearestPointQuery = function(p)
+{
+	var deltax = p.x - this.tc.x;
+	var deltay = p.y - this.tc.y;
+	var d = vlength2(deltax, deltay);
+	var r = this.r;
+	
+	var nearestp = new Vect(this.tc.x + deltax * r/d, this.tc.y + deltay * r/d);
+	return new NearestPointQueryInfo(this, nearestp, d - r);
 };
 
 var circleSegmentQuery = function(shape, center, r, a, b, info)
@@ -932,29 +984,17 @@ SegmentShape.prototype.cacheData = function(p, rot)
 	this.bb_t = t + rad;
 };
 
-SegmentShape.prototype.pointQuery = function(p)
+SegmentShape.prototype.nearestPointQuery = function(p)
 {
-	if(!bbContainsVect2(this.bb_l, this.bb_b, this.bb_r, this.bb_t, p)) return;
-	
-	var a = this.ta;
-	var b = this.tb;
-	
-	var seg_delta = vsub(b, a);
-	var closest_t = clamp01(vdot(seg_delta, vsub(p, a))/vlengthsq(seg_delta));
-	var closest = vadd(a, vmult(seg_delta, closest_t));
-
-	var delta = vsub(p, closest);
-	var distsq = vlengthsq(delta);
+	var closest = closestPointOnSegment(p, this.ta, this.tb);
+		
+	var deltax = p.x - closest.x;
+	var deltay = p.y - closest.y;
+	var d = vlength2(deltax, deltay);
 	var r = this.r;
-
-	if (distsq < r*r){
-		var info = new PointQueryExtendedInfo(this);
-
-		var dist = Math.sqrt(distsq);
-		info.d = r - dist;
-		info.n = vmult(delta, 1/dist);
-		return info;
-	}
+	
+	var nearestp = (d ? vadd(closest, vmult(new Vect(deltax, deltay), r/d)) : closest);
+	return new NearestPointQueryInfo(this, nearestp, d - r);
 };
 
 SegmentShape.prototype.segmentQuery = function(a, b)
@@ -1182,26 +1222,36 @@ PolyShape.prototype.cacheData = function(p, rot)
 	this.transformVerts(p, rot);
 };
 
-PolyShape.prototype.pointQuery = function(p)
+PolyShape.prototype.nearestPointQuery = function(p)
 {
-	if(!bbContainsVect2(this.bb_l, this.bb_b, this.bb_r, this.bb_t, p)) return;
+	var planes = this.tAxes;
+	var verts = this.tVerts;
 	
-	var info = new PointQueryExtendedInfo(this);
+	var v0x = verts[verts.length - 2];
+	var v0y = verts[verts.length - 1];
+	var minDist = Infinity;
+	var closestPoint = vzero;
+	var outside = false;
 	
-	var axes = this.tAxes;
-	for(var i=0; i<axes.length; i++){
-		var n = axes[i].n;
-		var dist = axes[i].d - vdot(n, p);
+	for(var i=0; i<planes.length; i++){
+		if(vdot(planes[i].n, p) - planes[i].d > 0) outside = true;
+		//if(cpSplittingPlaneCompare(planes[i], p) > 0.0f) outside = cpTrue;
 		
-		if(dist < 0){
-			return;
-		} else if(dist < info.d){
-			info.d = dist;
-			info.n = n;
+		var v1x = verts[i*2];
+		var v1y = verts[i*2 + 1];
+		var closest = closestPointOnSegment2(p.x, p.y, v0x, v0y, v1x, v1y);
+		
+		var dist = vdist(p, closest);
+		if(dist < minDist){
+			minDist = dist;
+			closestPoint = closest;
 		}
+		
+		v0x = v1x;
+		v0y = v1y;
 	}
 	
-	return info;
+	return new NearestPointQueryInfo(this, closestPoint, (outside ? minDist : -minDist));
 };
 
 PolyShape.prototype.segmentQuery = function(a, b)
@@ -1399,7 +1449,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
 		assert(this.w === this.w && Math.abs(this.w) !== Infinity, "Body's angular velocity is invalid.");
 		assert(this.t === this.t && Math.abs(this.t) !== Infinity, "Body's torque is invalid.");
 
-		v_assert_sane(this.rot, "Internal error: Body's rotation vector is invalid.");
+		v_assert_sane(this.rot, "Body's rotation vector is invalid.");
 
 		assert(this.v_limit === this.v_limit, "Body's velocity limit is invalid.");
 		assert(this.w_limit === this.w_limit, "Body's angular velocity limit is invalid.");
@@ -2045,7 +2095,7 @@ var bbTreeMergedArea = function(a, b)
 
 var bbProximity = function(a, b)
 {
-	return Math.abs(a.bb_l + a.bb_r - b.bb_l - b.bb_r) + Math.abs(a.bb_b + b.bb_t - b.bb_b - b.bb_t);
+	return Math.abs(a.bb_l + a.bb_r - b.bb_l - b.bb_r) + Math.abs(a.bb_b + a.bb_t - b.bb_b - b.bb_t);
 };
 
 var subtreeInsert = function(subtree, leaf, tree)
@@ -2352,10 +2402,11 @@ BBTree.prototype.reindexObject = function(obj, hashid)
 
 // **** Query
 
+// This has since been removed from upstream Chipmunk - which recommends you just use query() below
+// directly.
 BBTree.prototype.pointQuery = function(point, func)
 {
-	// The base collision object is the provided point.
-	if(this.root) subtreeQuery(this.root, new BB(point.x, point.y, point.x, point.y), func);
+	this.query(new BB(point.x, point.y, point.x, point.y), func);
 };
 
 BBTree.prototype.segmentQuery = function(a, b, t_exit, func)
@@ -4187,6 +4238,8 @@ Space.prototype.activateShapesTouchingShape = function(shape){
  * SOFTWARE.
  */
 
+// Point query functions
+
 /// Query the space at a point and call @c func for each shape found.
 Space.prototype.pointQuery = function(point, layers, group, func)
 {
@@ -4199,9 +4252,10 @@ Space.prototype.pointQuery = function(point, layers, group, func)
 		}
 	};
 
+	var bb = new BB(point.x, point.y, point.x, point.y);
 	this.lock(); {
-		this.activeShapes.pointQuery(point, helper);
-		this.staticShapes.pointQuery(point, helper);
+		this.activeShapes.query(bb, helper);
+		this.staticShapes.query(bb, helper);
 	} this.unlock(true);
 };
 
@@ -4214,6 +4268,47 @@ Space.prototype.pointQueryFirst = function(point, layers, group)
 	});
 	
 	return outShape;
+};
+
+// Nearest point query functions
+
+Space.prototype.nearestPointQuery = function(point, maxDistance, layers, group, func)
+{
+	var helper = function(shape){
+		if(!(shape.group && group === shape.group) && (layers & shape.layers)){
+			var info = shape.nearestPointQuery(point);
+
+			if(info.d < maxDistance) func(shape, info.d, info.p);
+		}
+	};
+
+	var bb = bbNewForCircle(point, maxDistance);
+
+	this.lock(); {
+		this.activeShapes.query(bb, helper);
+		this.staticShapes.query(bb, helper);
+	} this.unlock(true);
+};
+
+// Unlike the version in chipmunk, this returns a NearestPointQueryInfo object. Use its .shape
+// property to get the actual shape.
+Space.prototype.nearestPointQueryNearest = function(point, maxDistance, layers, group)
+{
+	var out;
+
+	var helper = function(shape){
+		if(!(shape.group && group === shape.group) && (layers & shape.layers) && !shape.sensor){
+			var info = shape.nearestPointQuery(point);
+
+			if(info.d < maxDistance && (!out || info.d < out.d)) out = info;
+		}
+	};
+
+	var bb = bbNewForCircle(point, maxDistance);
+	this.activeShapes.query(bb, helper);
+	this.staticShapes.query(bb, helper);
+
+	return out;
 };
 
 /// Perform a directed line segment query (like a raycast) against the space calling @c func for each shape intersected.
