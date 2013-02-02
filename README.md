@@ -2,6 +2,8 @@
 
 This is a port of the [Chipmunk Physics](http://chipmunk-physics.net/) library to Javascript!
 
+Check out the sexy [demos](http://dl.dropbox.com/u/2494815/demo/index.html)! (Surprisingly, works best in Safari)
+
 ## Caveats
 
 - It is slower than the C version (duh, its in javascript). Specifically, physics simulations using chipmunk-js runs about 3 times slower than the C equivalent.
