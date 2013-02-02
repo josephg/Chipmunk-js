@@ -1114,9 +1114,15 @@ var PolyShape = cp.PolyShape = function(body, verts, offset)
 
 PolyShape.prototype = Object.create(Shape.prototype);
 
-var Axis = function(n, d) {
+var SplittingPlane = function(n, d)
+{
 	this.n = n;
 	this.d = d;
+};
+
+SplittingPlane.prototype.compare = function(v)
+{
+	return vdot(this.n, v) - this.d;
 };
 
 PolyShape.prototype.setVerts = function(verts, offset)
@@ -1128,8 +1134,8 @@ PolyShape.prototype.setVerts = function(verts, offset)
 	// the code similar to the C.
 	this.verts = new Array(len);
 	this.tVerts = new Array(len);
-	this.axes = new Array(numVerts);
-	this.tAxes = new Array(numVerts);
+	this.planes = new Array(numVerts);
+	this.tPlanes = new Array(numVerts);
 	
 	for(var i=0; i<len; i+=2){
 		//var a = vadd(offset, verts[i]);
@@ -1144,8 +1150,8 @@ PolyShape.prototype.setVerts = function(verts, offset)
 
 		this.verts[i  ] = ax;
 		this.verts[i+1] = ay;
-		this.axes[i>>1] = new Axis(n, vdot2(n.x, n.y, ax, ay));
-		this.tAxes[i>>1] = new Axis(new Vect(0,0), 0);
+		this.planes[i>>1] = new SplittingPlane(n, vdot2(n.x, n.y, ax, ay));
+		this.tPlanes[i>>1] = new SplittingPlane(new Vect(0,0), 0);
 	}
 };
 
@@ -1206,8 +1212,8 @@ PolyShape.prototype.transformVerts = function(p, rot)
 
 PolyShape.prototype.transformAxes = function(p, rot)
 {
-	var src = this.axes;
-	var dst = this.tAxes;
+	var src = this.planes;
+	var dst = this.tPlanes;
 	
 	for(var i=0; i<src.length; i++){
 		var n = vrotate(src[i].n, rot);
@@ -1224,7 +1230,7 @@ PolyShape.prototype.cacheData = function(p, rot)
 
 PolyShape.prototype.nearestPointQuery = function(p)
 {
-	var planes = this.tAxes;
+	var planes = this.tPlanes;
 	var verts = this.tVerts;
 	
 	var v0x = verts[verts.length - 2];
@@ -1234,8 +1240,7 @@ PolyShape.prototype.nearestPointQuery = function(p)
 	var outside = false;
 	
 	for(var i=0; i<planes.length; i++){
-		if(vdot(planes[i].n, p) - planes[i].d > 0) outside = true;
-		//if(cpSplittingPlaneCompare(planes[i], p) > 0.0f) outside = cpTrue;
+		if(planes[i].compare(p) > 0) outside = true;
 		
 		var v1x = verts[i*2];
 		var v1y = verts[i*2 + 1];
@@ -1256,7 +1261,7 @@ PolyShape.prototype.nearestPointQuery = function(p)
 
 PolyShape.prototype.segmentQuery = function(a, b)
 {
-	var axes = this.tAxes;
+	var axes = this.tPlanes;
 	var verts = this.tVerts;
 	var numVerts = axes.length;
 	var len = numVerts * 2;
@@ -1298,11 +1303,11 @@ PolyShape.prototype.valueOnAxis = function(n, d)
 
 PolyShape.prototype.containsVert = function(vx, vy)
 {
-	var axes = this.tAxes;
+	var planes = this.tPlanes;
 	
-	for(var i=0; i<axes.length; i++){
-		var n = axes[i].n;
-		var dist = vdot2(n.x, n.y, vx, vy) - axes[i].d;
+	for(var i=0; i<planes.length; i++){
+		var n = planes[i].n;
+		var dist = vdot2(n.x, n.y, vx, vy) - planes[i].d;
 		if(dist > 0) return false;
 	}
 	
@@ -1311,12 +1316,12 @@ PolyShape.prototype.containsVert = function(vx, vy)
 
 PolyShape.prototype.containsVertPartial = function(vx, vy, n)
 {
-	var axes = this.tAxes;
+	var planes = this.tPlanes;
 	
-	for(var i=0; i<axes.length; i++){
-		var n2 = axes[i].n;
+	for(var i=0; i<planes.length; i++){
+		var n2 = planes[i].n;
 		if(vdot(n2, n) < 0) continue;
-		var dist = vdot2(n2.x, n2.y, vx, vy) - axes[i].d;
+		var dist = vdot2(n2.x, n2.y, vx, vy) - planes[i].d;
 		if(dist > 0) return false;
 	}
 	
@@ -3150,14 +3155,14 @@ var circle2segment = function(circleShape, segmentShape)
 //
 // See: http://jsperf.com/return-two-values-from-function/2
 var last_MSA_min = 0;
-var findMSA = function(poly, axes)
+var findMSA = function(poly, planes)
 {
 	var min_index = 0;
-	var min = poly.valueOnAxis(axes[0].n, axes[0].d);
+	var min = poly.valueOnAxis(planes[0].n, planes[0].d);
 	if(min > 0) return -1;
 	
-	for(var i=1; i<axes.length; i++){
-		var dist = poly.valueOnAxis(axes[i].n, axes[i].d);
+	for(var i=1; i<planes.length; i++){
+		var dist = poly.valueOnAxis(planes[i].n, planes[i].d);
 		if(dist > 0) {
 			return -1;
 		} else if(dist > min){
@@ -3227,19 +3232,19 @@ var findVerts = function(poly1, poly2, n, dist)
 // Collide poly shapes together.
 var poly2poly = function(poly1, poly2)
 {
-	var mini1 = findMSA(poly2, poly1.tAxes);
+	var mini1 = findMSA(poly2, poly1.tPlanes);
 	if(mini1 == -1) return NONE;
 	var min1 = last_MSA_min;
 	
-	var mini2 = findMSA(poly1, poly2.tAxes);
+	var mini2 = findMSA(poly1, poly2.tPlanes);
 	if(mini2 == -1) return NONE;
 	var min2 = last_MSA_min;
 	
 	// There is overlap, find the penetrating verts
 	if(min1 > min2)
-		return findVerts(poly1, poly2, poly1.tAxes[mini1].n, min1);
+		return findVerts(poly1, poly2, poly1.tPlanes[mini1].n, min1);
 	else
-		return findVerts(poly1, poly2, vneg(poly2.tAxes[mini2].n), min2);
+		return findVerts(poly1, poly2, vneg(poly2.tPlanes[mini2].n), min2);
 };
 
 // Like cpPolyValueOnAxis(), but for segments.
@@ -3276,8 +3281,8 @@ var seg2poly = function(seg, poly)
 {
 	var arr = [];
 
-	var axes = poly.tAxes;
-	var numVerts = axes.length;
+	var planes = poly.tPlanes;
+	var numVerts = planes.length;
 	
 	var segD = vdot(seg.tn, seg.ta);
 	var minNorm = poly.valueOnAxis(seg.tn, segD) - seg.r;
@@ -3285,10 +3290,10 @@ var seg2poly = function(seg, poly)
 	if(minNeg > 0 || minNorm > 0) return NONE;
 	
 	var mini = 0;
-	var poly_min = segValueOnAxis(seg, axes[0].n, axes[0].d);
+	var poly_min = segValueOnAxis(seg, planes[0].n, planes[0].d);
 	if(poly_min > 0) return NONE;
 	for(var i=0; i<numVerts; i++){
-		var dist = segValueOnAxis(seg, axes[i].n, axes[i].d);
+		var dist = segValueOnAxis(seg, planes[i].n, planes[i].d);
 		if(dist > 0){
 			return NONE;
 		} else if(dist > poly_min){
@@ -3297,7 +3302,7 @@ var seg2poly = function(seg, poly)
 		}
 	}
 	
-	var poly_n = vneg(axes[mini].n);
+	var poly_n = vneg(planes[mini].n);
 	
 	var va = vadd(seg.ta, vmult(poly_n, seg.r));
 	var vb = vadd(seg.tb, vmult(poly_n, seg.r));
@@ -3334,7 +3339,7 @@ var seg2poly = function(seg, poly)
 		if((con = circle2circleQuery(seg.tb, poly_b, seg.r, 0, arr))) return [con];
 	}
 
-//	console.log(poly.tVerts, poly.tAxes);
+//	console.log(poly.tVerts, poly.tPlanes);
 //	console.log('seg2poly', arr);
 	return arr;
 };
@@ -3343,12 +3348,12 @@ var seg2poly = function(seg, poly)
 // TODO: Comment me!
 var circle2poly = function(circ, poly)
 {
-	var axes = poly.tAxes;
+	var planes = poly.tPlanes;
 	
 	var mini = 0;
-	var min = vdot(axes[0].n, circ.tc) - axes[0].d - circ.r;
-	for(var i=0; i<axes.length; i++){
-		var dist = vdot(axes[i].n, circ.tc) - axes[i].d - circ.r;
+	var min = vdot(planes[0].n, circ.tc) - planes[0].d - circ.r;
+	for(var i=0; i<planes.length; i++){
+		var dist = vdot(planes[i].n, circ.tc) - planes[i].d - circ.r;
 		if(dist > 0){
 			return NONE;
 		} else if(dist > min) {
@@ -3357,7 +3362,7 @@ var circle2poly = function(circ, poly)
 		}
 	}
 	
-	var n = axes[mini].n;
+	var n = planes[mini].n;
 
 	var verts = poly.tVerts;
 	var len = verts.length;
