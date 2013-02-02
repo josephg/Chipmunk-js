@@ -29,7 +29,7 @@ cp.momentForPoly(mass, verts, offset);
     ```
 
 - Lots of trivial getters and setters have been removed.
-- Lists of verticies are described using a flattened JS array of `[x1,y1,x2,y2,...]` instead of an array of objects. For example, use `[0,0, 0,1, 1,1, 1,0]` instead of `[cp.v(0,0), cp.v(0,1), cp.v(1,1), cp.v(1,0)]`.
+- Lists of verticies are described using a flattened JS array of `[x1,y1, x2,y2, ...]` instead of an array of objects. For example, use `[0,0, 0,1, 1,1, 1,0]` instead of `[cp.v(0,0), cp.v(0,1), cp.v(1,1), cp.v(1,0)]`.
 
 ## On a website
 
