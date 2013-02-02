@@ -55,7 +55,7 @@ Convex.prototype.update = function(dt) {
 		
 		// This function builds a convex hull for the vertexes.
 		// Because the result array is NULL, it will reduce the input array instead.
-		var hullCount = cp.convexHull(verts, null, tolerance);
+		cp.convexHull(verts, null, tolerance);
 		
 		// Figure out how much to shift the body by.
 		var centroid = cp.centroidForPoly(verts);
