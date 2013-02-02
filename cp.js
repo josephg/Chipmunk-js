@@ -724,13 +724,13 @@ Shape.prototype.getBody = function() { return this.body; };
 
 Shape.prototype.active = function()
 {
-// return shape->prev || shape->body->shapeList == shape;
+// return shape->prev || (shape->body && shape->body->shapeList == shape);
 	return this.body && this.body.shapeList.indexOf(this) !== -1;
 };
 
 Shape.prototype.setBody = function(body)
 {
-	assert(!this.active(), "You cannot change the body on an active shape. You must remove the shape, then ");
+	assert(!this.active(), "You cannot change the body on an active shape. You must remove the shape from the space before changing the body.");
 	this.body = body;
 };
 
@@ -1184,7 +1184,6 @@ PolyShape.prototype.cacheData = function(p, rot)
 
 PolyShape.prototype.pointQuery = function(p)
 {
-//	if(!bbContainsVect(this.shape.bb, p)) return;
 	if(!bbContainsVect2(this.bb_l, this.bb_b, this.bb_r, this.bb_t, p)) return;
 	
 	var info = new PointQueryExtendedInfo(this);
@@ -1734,8 +1733,11 @@ var SpatialIndex = cp.SpatialIndex = function(staticIndex)
 {
 	this.staticIndex = staticIndex;
 	
+
 	if(staticIndex){
-		assert(!staticIndex.dynamicIndex, "This static index is already associated with a dynamic index.");
+		if(staticIndex.dynamicIndex){
+			throw new Error("This static index is already associated with a dynamic index.");
+		}
 		staticIndex.dynamicIndex = this;
 	}
 };
@@ -1954,7 +1956,7 @@ Leaf.prototype.clearPairs = function(tree)
 		pair.recycle(tree);
 		pair = next;
 	}
-}
+};
 
 var pairInsert = function(a, b, tree)
 {
@@ -2044,7 +2046,7 @@ var bbTreeMergedArea = function(a, b)
 var bbProximity = function(a, b)
 {
 	return Math.abs(a.bb_l + a.bb_r - b.bb_l - b.bb_r) + Math.abs(a.bb_b + b.bb_t - b.bb_b - b.bb_t);
-}
+};
 
 var subtreeInsert = function(subtree, leaf, tree)
 {
@@ -2185,40 +2187,43 @@ var bbTreeIntersectsNode = function(a, b)
 	return (a.bb_l <= b.bb_r && b.bb_l <= a.bb_r && a.bb_b <= b.bb_t && b.bb_b <= a.bb_t);
 };
 
-var markLeafQuery = function(subtree, leaf, left, tree, func)
+Leaf.prototype.markLeafQuery = function(leaf, left, tree, func)
 {
-	if(bbTreeIntersectsNode(leaf, subtree)){
-		if(subtree.isLeaf){
-			if(left){
-				pairInsert(leaf, subtree, tree);
-			} else {
-				if(subtree.stamp < leaf.stamp) pairInsert(subtree, leaf, tree);
-				if(func) func(leaf.obj, subtree.obj);
-			}
-		} else {
-			markLeafQuery(subtree.A, leaf, left, tree, func);
-			markLeafQuery(subtree.B, leaf, left, tree, func);
-		}
+	if(bbTreeIntersectsNode(leaf, this)){
+    if(left){
+      pairInsert(leaf, this, tree);
+    } else {
+      if(this.stamp < leaf.stamp) pairInsert(this, leaf, tree);
+      if(func) func(leaf.obj, this.obj);
+    }
+  }
+};
+
+Node.prototype.markLeafQuery = function(leaf, left, tree, func)
+{
+	if(bbTreeIntersectsNode(leaf, this)){
+    this.A.markLeafQuery(leaf, left, tree, func);
+    this.B.markLeafQuery(leaf, left, tree, func);
 	}
 };
 
-var markLeaf = function(leaf, tree, staticRoot, func)
+Leaf.prototype.markSubtree = function(tree, staticRoot, func)
 {
-	if(leaf.stamp == tree.getStamp()){
-		if(staticRoot) markLeafQuery(staticRoot, leaf, false, tree, func);
+	if(this.stamp == tree.getStamp()){
+		if(staticRoot) staticRoot.markLeafQuery(this, false, tree, func);
 		
-		for(var node = leaf; node.parent; node = node.parent){
+		for(var node = this; node.parent; node = node.parent){
 			if(node == node.parent.A){
-				markLeafQuery(node.parent.B, leaf, true, tree, func);
+				node.parent.B.markLeafQuery(this, true, tree, func);
 			} else {
-				markLeafQuery(node.parent.A, leaf, false, tree, func);
+				node.parent.A.markLeafQuery(this, false, tree, func);
 			}
 		}
 	} else {
-		var pair = leaf.pairs;
+		var pair = this.pairs;
 		while(pair){
-			if(leaf === pair.leafB){
-				if(func) func(pair.leafA.obj, leaf.obj);
+			if(this === pair.leafB){
+				if(func) func(pair.leafA.obj, this.obj);
 				pair = pair.nextB;
 			} else {
 				pair = pair.nextA;
@@ -2227,14 +2232,10 @@ var markLeaf = function(leaf, tree, staticRoot, func)
 	}
 };
 
-var markSubtree = function(subtree, tree, staticRoot, func)
+Node.prototype.markSubtree = function(tree, staticRoot, func)
 {
-	if(subtree.isLeaf){
-		markLeaf(subtree, tree, staticRoot, func);
-	} else {
-		markSubtree(subtree.A, tree, staticRoot, func);
-		markSubtree(subtree.B, tree, staticRoot, func);
-	}
+  this.A.markSubtree(tree, staticRoot, func);
+  this.B.markSubtree(tree, staticRoot, func);
 };
 
 // **** Leaf Functions
@@ -2271,11 +2272,11 @@ Leaf.prototype.addPairs = function(tree)
 	if(dynamicIndex){
 		var dynamicRoot = dynamicIndex.root;
 		if(dynamicRoot){
-			markLeafQuery(dynamicRoot, this, true, dynamicIndex, null);
+			dynamicRoot.markLeafQuery(this, true, dynamicIndex, null);
 		}
 	} else {
 		var staticRoot = tree.staticIndex.root;
-		markLeaf(this, tree, staticRoot, null);
+		this.markSubtree(tree, staticRoot, null);
 	}
 };
 
@@ -2329,7 +2330,7 @@ BBTree.prototype.reindexQuery = function(func)
 	var staticIndex = this.staticIndex;
 	var staticRoot = staticIndex && staticIndex.root;
 	
-	markSubtree(this.root, this, staticRoot, func);
+	this.root.markSubtree(this, staticRoot, func);
 	if(staticIndex && !staticRoot) this.collideStatic(this, staticIndex, func);
 	
 	this.incrementStamp();
@@ -3356,7 +3357,7 @@ CircleShape.prototype.collisionTable = [
 
 SegmentShape.prototype.collisionTable = [
 	null,
-	function(seg, seg) { return NONE; }, // seg2seg
+	function(segA, segB) { return NONE; }, // seg2seg
 	seg2poly
 ];
 
@@ -4044,6 +4045,7 @@ Space.prototype.processComponents = function(dt)
 		assertSoft(body.nodeRoot === null, "Internal Error: Dangling root pointer detected in contact graph.");
 	}
 
+	// Calculate the kinetic energy of all the bodies
 	if(sleep){
 		var dv = this.idleSpeedThreshold;
 		var dvsq = (dv ? dv*dv : vlengthsq(this.gravity)*dt*dt);
@@ -4700,7 +4702,6 @@ Space.prototype.step = function(dt)
 		}
 
 		// Run the impulse solver.
-		//cpSpaceArbiterApplyImpulseFunc applyImpulse = this.arbiterApplyImpulse;
 		for(i=0; i<this.iterations; i++){
 			for(j=0; j<arbiters.length; j++){
 				arbiters[j].applyImpulse();

@@ -463,6 +463,7 @@ var run_bench = function(bench) {
 		space.step(bench.dt);
 	}
 	var end = Date.now();
+
 	return end - start;
 };
 
