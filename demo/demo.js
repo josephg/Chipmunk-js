@@ -43,8 +43,12 @@ var Demo = function() {
 
 	var mouseBody = this.mouseBody = new cp.Body(Infinity, Infinity);
 
+	this.canvas.oncontextmenu = function(e) { return false; }
+
 	this.canvas.onmousedown = function(e) {
+		e.preventDefault();
 		var rightclick = e.which === 3; // or e.button === 2;
+		self.mouse = canvas2point(e.clientX, e.clientY);
 
 		if(!rightclick && !self.mouseJoint) {
 			var point = canvas2point(e.clientX, e.clientY);
@@ -59,16 +63,25 @@ var Demo = function() {
 				space.addConstraint(mouseJoint);
 			}
 		}
+
+		if(rightclick) {
+			self.rightClick = true;
+		}
 	};
 
 	this.canvas.onmouseup = function(e) {
 		var rightclick = e.which === 3; // or e.button === 2;
+		self.mouse = canvas2point(e.clientX, e.clientY);
 
 		if(!rightclick) {
 			if(self.mouseJoint) {
 				space.removeConstraint(self.mouseJoint);
 				self.mouseJoint = null;
 			}
+		}
+
+		if(rightclick) {
+			self.rightClick = false;
 		}
 	};
 
