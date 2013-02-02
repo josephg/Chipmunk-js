@@ -19,13 +19,13 @@ The API for Chipmunk-js is almost identical to chipmunk-physics. Except:
 cpMomentForPoly(mass, numVerts, *verts, offset);
     ```
 
-    is now simply:
+    becomes:
 
     ```javascript
-momentForPoly(mass, verts, offset);
+cp.momentForPoly(mass, verts, offset);
     ```
 
-- Lots of trivial getters and setters have been removed. Access the property directly.
+- Lots of trivial getters and setters have been removed.
 
 ## On a website
 
@@ -39,7 +39,7 @@ space.addBody(new cp.Body(...))
 </script>
 ```
 
-If any exceptions are thrown or anything, use `cp.js` instead and post the stack trace you get to the issue page.
+If any exceptions are thrown or anything, use `cp.js` instead of cp.min.js and post the stack trace you get to the issue page.
 
 ## From nodejs
 

@@ -218,15 +218,18 @@ Demo.prototype.run = function() {
 	this.running = true;
 
 	var self = this;
-	var step = function() {
-		self.step();
+
+	var lastTime = 0;
+	var step = function(time) {
+		self.step(time - lastTime);
+		lastTime = time;
+
 		if (self.running) {
 			raf(step);
 		}
 	};
 
-	this.lastStep = Date.now();
-	step();
+	step(0);
 };
 
 var soon = function(fn) { setTimeout(fn, 1); };
@@ -252,13 +255,10 @@ Demo.prototype.stop = function() {
 	this.running = false;
 };
 
-Demo.prototype.step = function() {
-	var dt = (now - this.lastStep) / 1000;
-	this.lastStep = now;
-
+Demo.prototype.step = function(dt) {
 	// Update FPS
 	if(dt > 0) {
-		this.fps = 0.7*this.fps + 0.3*(1/dt);
+		this.fps = 0.9*this.fps + 0.1*(1000/dt);
 	}
 
 	// Move mouse body toward the mouse
@@ -267,10 +267,6 @@ Demo.prototype.step = function() {
 	this.mouseBody.p = newPoint;
 
 	var lastNumActiveShapes = this.space.activeShapes.count;
-
-	// Limit the amount of time thats passed to 0.1 - if the user switches tabs or
-	// has a slow computer, we'll just slow the simulation down.
-	dt = Math.min(dt, 1/25);
 
 	var now = Date.now();
 	this.update(1/60);
