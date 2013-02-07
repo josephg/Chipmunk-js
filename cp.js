@@ -207,9 +207,9 @@ var momentForBox = cp.momentForBox = function(m, width, height)
 
 var momentForBox2 = cp.momentForBox2 = function(m, box)
 {
-	width = box.r - box.l;
-	height = box.t - box.b;
-	offset = vmult([box.l + box.r, box.b + box.t], 0.5);
+	var width = box.r - box.l;
+	var height = box.t - box.b;
+	var offset = vmult([box.l + box.r, box.b + box.t], 0.5);
 	
 	// TODO NaN when offset is 0 and m is INFINITY	
 	return momentForBox(m, width, height) + m*vlengthsq(offset);
@@ -1570,7 +1570,7 @@ var Body = cp.Body = function(m, i) {
 // I wonder if this should use the constructor style like Body...
 var createStaticBody = function()
 {
-	body = new Body(Infinity, Infinity);
+	var body = new Body(Infinity, Infinity);
 	body.nodeIdleTime = Infinity;
 
 	return body;
