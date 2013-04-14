@@ -23,10 +23,6 @@
     ctx.stroke();
   };
 
-  var drawRect = function(ctx, pos, size) {
-    ctx.fillRect(pos.x, pos.y, size.x, size.y);
-  };
-
   var springPoints = [
     v(0.00, 0.0),
     v(0.20, 0.0),
