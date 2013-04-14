@@ -121,28 +121,28 @@ var closestPointOnSegment2 = function(px, py, ax, ay, bx, by)
 	return new Vect(bx + deltax * t, by + deltay * t);
 };
 
-var momentForCircle = cp.momentForCircle = function(m, r1, r2, offset)
+cp.momentForCircle = function(m, r1, r2, offset)
 {
 	return m*(0.5*(r1*r1 + r2*r2) + vlengthsq(offset));
 };
 
-var areaForCircle = cp.areaForCircle = function(r1, r2)
+cp.areaForCircle = function(r1, r2)
 {
 	return Math.PI*Math.abs(r1*r1 - r2*r2);
 };
 
-var momentForSegment = cp.momentForSegment = function(m, a, b)
+cp.momentForSegment = function(m, a, b)
 {
 	var offset = vmult(vadd(a, b), 0.5);
 	return m*(vdistsq(b, a)/12 + vlengthsq(offset));
 };
 
-var areaForSegment = cp.areaForSegment = function(a, b, r)
+cp.areaForSegment = function(a, b, r)
 {
 	return r*(Math.PI*r + 2*vdist(a, b));
 };
 
-var momentForPoly = cp.momentForPoly = function(m, verts, offset)
+cp.momentForPoly = function(m, verts, offset)
 {
 	var sum1 = 0;
 	var sum2 = 0;
@@ -163,7 +163,7 @@ var momentForPoly = cp.momentForPoly = function(m, verts, offset)
 	return (m*sum1)/(6*sum2);
 };
 
-var areaForPoly = cp.areaForPoly = function(verts)
+cp.areaForPoly = function(verts)
 {
 	var area = 0;
 	for(var i=0, len=verts.length; i<len; i+=2){
@@ -173,7 +173,7 @@ var areaForPoly = cp.areaForPoly = function(verts)
 	return -area/2;
 };
 
-var centroidForPoly = cp.centroidForPoly = function(verts)
+cp.centroidForPoly = function(verts)
 {
 	var sum = 0;
 	var vsum = new Vect(0,0);
@@ -190,9 +190,9 @@ var centroidForPoly = cp.centroidForPoly = function(verts)
 	return vmult(vsum, 1/(3*sum));
 };
 
-var recenterPoly = cp.recenterPoly = function(verts)
+cp.recenterPoly = function(verts)
 {
-	var centroid = centroidForPoly(verts);
+	var centroid = cp.centroidForPoly(verts);
 	
 	for(var i=0; i<verts.length; i+=2){
 		verts[i] -= centroid.x;
@@ -200,19 +200,19 @@ var recenterPoly = cp.recenterPoly = function(verts)
 	}
 };
 
-var momentForBox = cp.momentForBox = function(m, width, height)
+cp.momentForBox = function(m, width, height)
 {
 	return m*(width*width + height*height)/12;
 };
 
-var momentForBox2 = cp.momentForBox2 = function(m, box)
+cp.momentForBox2 = function(m, box)
 {
 	var width = box.r - box.l;
 	var height = box.t - box.b;
 	var offset = vmult([box.l + box.r, box.b + box.t], 0.5);
 	
 	// TODO NaN when offset is 0 and m is INFINITY	
-	return momentForBox(m, width, height) + m*vlengthsq(offset);
+	return cp.momentForBox(m, width, height) + m*vlengthsq(offset);
 };
 
 // Quick hull
@@ -316,7 +316,9 @@ var QHullReduce = function(tol, verts, offs, count, a, pivot, b, resultPos)
 //
 // Expects the verts to be described in the same way as cpPolyShape - which is to say, it should
 // be a list of [x1,y1,x2,y2,x3,y3,...].
-var convexHull = cp.convexHull = function(verts, result, tol)
+//
+// tolerance is in world coordinates. Eg, 2.
+cp.convexHull = function(verts, result, tolerance)
 {
 	if(result){
 		// Copy the line vertexes into the empty part of the result polyline to use as a scratch buffer.
@@ -345,7 +347,7 @@ var convexHull = cp.convexHull = function(verts, result, tol)
 	
 	var count = verts.length >> 1;
 	//if(first) (*first) = start;
-	var resultCount = QHullReduce(tol, result, 2, count - 2, a, b, a, 1) + 1;
+	var resultCount = QHullReduce(tolerance, result, 2, count - 2, a, b, a, 1) + 1;
 	result.length = resultCount*2;
 
 	assertSoft(polyValidate(result),
@@ -402,15 +404,13 @@ var lerpconst = function(f1, f2, d)
 // I'm using an array tuple here because (at time of writing) its about 3x faster
 // than an object on firefox, and the same speed on chrome.
 
-var numVects = 0;
-
-var traces = {};
+//var numVects = 0;
 
 var Vect = cp.Vect = function(x, y)
 {
 	this.x = x;
 	this.y = y;
-	numVects++;
+	//numVects++;
 
 //	var s = new Error().stack;
 //	traces[s] = traces[s] ? traces[s]+1 : 1;
@@ -4005,7 +4005,7 @@ Space.prototype.reindexShapesForBody = function(body)
 /// Switch the space to use a spatial has as it's spatial index.
 Space.prototype.useSpatialHash = function(dim, count)
 {
-	throw new Error('Spatial Hash not yet implemented!');
+	throw new Error('Spatial Hash not implemented.');
 	
 	var staticShapes = new SpaceHash(dim, count, null);
 	var activeShapes = new SpaceHash(dim, count, staticShapes);
