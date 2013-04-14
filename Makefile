@@ -1,6 +1,6 @@
 .PHONY: clean, all
 
-all: cp.min.js bench.js demos.js
+all: cp.min.js cp.extra.min.js bench.js demos.js
 
 js = chipmunk.js \
 		 cpVect.js \
@@ -45,8 +45,8 @@ cp.js: $(jsfiles) $(constraintfiles)
 	cat $+ >> $@
 	echo "})();" >> $@
 
-cp.min.js: cp.js
-	uglifyjs $+ > $@
+%.min.js: %.js
+	uglifyjs $+ -m -c > $@
 
 bench.js: $(jsfiles) $(constraintfiles) benchmark/mersenne.js benchmark/bench.js
 	cat $+ > $@
@@ -55,4 +55,4 @@ demos.js: $(demofiles)
 	cat $+ > $@
 
 clean:
-	rm -f cp.js cp.min.js bench.js demos.js
+	rm -f cp.js cp.min.js cp.extra.min.js bench.js demos.js
