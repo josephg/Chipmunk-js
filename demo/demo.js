@@ -45,12 +45,12 @@ var ctx = Demo.prototype.ctx = canvas.getContext('2d');
 // in floating point maths anyway.
 
 window.onresize = function(e) {
-	var width = Demo.prototype.width = canvas.width = 800; window.innerWidth;
-	var height = Demo.prototype.height = canvas.height = 500;//window.innerHeight;
-	if (width/height > 800/500) {
-		Demo.prototype.scale = height / 500;
+	var width = Demo.prototype.width = canvas.width = window.innerWidth;
+	var height = Demo.prototype.height = canvas.height = window.innerHeight;
+	if (width/height > 640/480) {
+		Demo.prototype.scale = height / 480;
 	} else {
-		Demo.prototype.scale = width / 800;
+		Demo.prototype.scale = width / 640;
 	}
 
 	Demo.resized = true;

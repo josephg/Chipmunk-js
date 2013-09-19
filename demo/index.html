@@ -1,7 +1,5 @@
 <!DOCTYPE HTML>
-  <head>
 <meta name="viewport" content="width=device-width, initial-scale=0.4, maximum-scale=1.0, user-scalable=no" />
-
 <style>
 	body {
 		margin: 0px;
@@ -43,11 +41,9 @@
 	}
 
 </style>
-</head>
-  <body>
 <div id="tabbar"></div>
 <canvas></canvas>
-<script src="../cp.min.js"></script>
+<script src="../cp.js"></script>
 <script src="demo.js"></script>
 
 <script src="LogoSmash.js"></script>
@@ -112,4 +108,3 @@
   var demoIndex = getQueryStringAsObject()["demoIndex"] || Math.round(Math.random()*demos.length);
 	demos[ demoIndex ].tab.onclick();
 </script>
-  </body>
