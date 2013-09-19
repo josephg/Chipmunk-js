@@ -9,11 +9,6 @@ var GRABABLE_MASK_BIT = 1<<31;
 var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
 var Demo = function() {
-
-  Demo.COLLISIONGROUP_NONE = (1 << 0);
-  Demo.COLLISIONGROUP_BALL = (1 << 2);
-  Demo.COLLISIONGROUP_FLOOR = (1 << 3);
-
 	this.space = new cp.Space();
 	this.remainder = 0;
 	this.fps = 0;
@@ -35,6 +30,10 @@ var Demo = function() {
   window.addEventListener("focus", this.run.bind(this), false);
   window.addEventListener("blur", this.stop.bind(this), false);
 };
+
+Demo.COLLISIONGROUP_NONE = (1 << 0);
+Demo.COLLISIONGROUP_BALL = (1 << 2);
+Demo.COLLISIONGROUP_FLOOR = (1 << 3);
 
 var canvas = Demo.prototype.canvas = document.getElementsByTagName('canvas')[0];
 
