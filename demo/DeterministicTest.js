@@ -1,5 +1,8 @@
 (function(){
 
+  var a_x = {};
+  var a_y = {};
+  var a_r = {};
 
   var itr = 0;
 
@@ -15,17 +18,13 @@
     space.gravity = v(0, -500);
     space.sleepTimeThreshold = 0.5;
     space.collisionSlop = 0.5;
-    space.sleepTimeThreshold = Infinity;
+    space.sleepTimeThreshold = 0.5;
 
     space.addCollisionHandler(0,0, this.contactBegin.bind(this), null, null, null);
 
 
     this.addFloor();
     this.addWalls();
-
-    var width = 50;
-    var height = 60;
-    var mass = width * height * 1/1000;
 
     var self = this;
 //    this.canvas.onmousedown = function(e) {
@@ -50,12 +49,13 @@
 //      e.preventDefault();
 //
 //      self.dragBody = null;
-//    };
+//    }; '
 
-    var hSpacing = 108.55357670085505;//;
-    for(var i = 0; i <= 40; i++ ) {
-      this.createTriangleBody( this.width*0.1 + (i*61) % (this.width*0.8), (i*hSpacing)  % this.height, 30, hSpacing * i );
-//      this.createTriangleBody( this.width*0.92 - (i*61) % (this.width*0.86), (i*100)  % this.height - i, 30, i*7 % -360);
+    var x = [263,324,568,629,690,233,416,477,142,203,447,569,691,295,356,600];
+    var y = [325.660731,434.214308,368.42861600000003,476.98219300000005,85.53576999999996,411.1965010000001,236.85723200000007,345.410809,388.1786940000002,496.7322710000003,430.94657899999993,148.0537330000002,365.160887,299.3751950000001,407.9287720000002,342.1430799999998];
+    var r = [325.660731,434.214308,868.428616,976.982193,1085.53577,1411.1965010000001,1736.857232,1845.410809,2388.178694,2496.7322710000003,2930.946579,3148.053733,3365.160887,3799.375195,3907.928772,4342.14308];
+    for( var i = 0; i < x.length; i++) {
+      this.createTriangleBody(x[i],y[i], 30, r[i]);
     }
     window.mySpace = space;
     this.ctx.strokeStyle = "black";
@@ -75,10 +75,16 @@
     var shapeB = arbiter.getB();
 
     // ball and floor
-    if( (shapeA.group | shapeB.group) == (window.COLLISIONGROUP_BALL | window.COLLISIONGROUP_FLOOR) ) {
-      var ball = shapeA.group == window.COLLISIONGROUP_BALL ? shapeA : shapeB ;
+    if( (shapeA.group | shapeB.group) == (Demo.COLLISIONGROUP_BALL | Demo.COLLISIONGROUP_FLOOR) ) {
+      var ball = shapeA.group == Demo.COLLISIONGROUP_BALL ? shapeA : shapeB ;
       this.space.addPostStepCallback(this.postStepRemove.bind(this, this.space, ball))
     }
+//
+//    if( (shapeA.group | shapeB.group) == (Demo.COLLISIONGROUP_BALL | Demo.COLLISIONGROUP_NONE) ) {
+//
+//    }
+
+
     return true;
   };
   DeterministicTest.prototype.createTriangleBody = function(x,y,size,rotation) {
@@ -90,8 +96,8 @@
     ];
 
     var mass = 1.0;
-    var moment = cp.momentForPoly(Number.MAX_VALUE * 0.001, verts, v(0, 0));
-    var body = this.space.addBody(new cp.Body(Number.MAX_VALUE * 0.001, moment));
+    var moment = cp.momentForPoly(Number.MAX_VALUE * 0.01, verts, v(0, 0));
+    var body = this.space.addBody(new cp.Body(Number.MAX_VALUE * 0.01, moment));
     body.nodeIdleTime = 0;
 
     body.setAngle( rotation * Math.PI / 180);
@@ -103,6 +109,7 @@
     shape.setFriction(0);
     shape.setElasticity(1);
     this.space.addShape(shape);
+    return body;
   };
 
   DeterministicTest.prototype.antiGravityUpdate = function(body, gravity, damping, dt ) {
@@ -119,7 +126,7 @@
     var circle = this.space.addShape(new cp.CircleShape(body, radius, v(0, 0)));
     circle.setElasticity(1);
     circle.setFriction(0);
-    circle.group = window.COLLISIONGROUP_BALL;
+    circle.group = Demo.COLLISIONGROUP_BALL;
   };
 
   DeterministicTest.prototype.update = function(dt) {
@@ -129,7 +136,7 @@
     Demo.prototype.update.call(this, dt);
 
 
-    if( ++itr % 3  == 0 ) {
+    if( ++itr % 5  == 0 ) {
       this.createCircle(this.width*0.5, this.height);
     }
   };

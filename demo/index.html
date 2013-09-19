@@ -1,6 +1,6 @@
 <!DOCTYPE HTML>
   <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=0.4, maximum-scale=1.0, user-scalable=no" />
 
 <style>
 	body {
@@ -84,10 +84,8 @@
 			current = new this.demo();
 			current.run();
 
-      // Set URL querystring
-      var rootURL = window.location.href.slice(0, window.location.href.indexOf('#') );
-      window.location = rootURL + "#?demoIndex=" + this.demoIndex;
-
+      // Set url for easy refreshing demo debugging
+      window.location.hash = "?demoIndex=" + this.demoIndex;
 			return false;
 		};
 

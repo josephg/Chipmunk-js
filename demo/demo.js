@@ -1,8 +1,5 @@
 // This is the utility code to drive the chipmunk demos. The demos are rendered using
 // a single canvas on the page.
-window.COLLISIONGROUP_NONE = (1 << 0);
-window.COLLISIONGROUP_BALL = (1 << 2);
-window.COLLISIONGROUP_FLOOR = (1 << 3);
 
 var v = cp.v;
 
@@ -12,6 +9,11 @@ var GRABABLE_MASK_BIT = 1<<31;
 var NOT_GRABABLE_MASK = ~GRABABLE_MASK_BIT;
 
 var Demo = function() {
+
+  Demo.COLLISIONGROUP_NONE = (1 << 0);
+  Demo.COLLISIONGROUP_BALL = (1 << 2);
+  Demo.COLLISIONGROUP_FLOOR = (1 << 3);
+
 	this.space = new cp.Space();
 	this.remainder = 0;
 	this.fps = 0;
@@ -283,20 +285,18 @@ Demo.prototype.addFloor = function() {
 	var floor = space.addShape(new cp.SegmentShape(space.staticBody, v(0, 0), v(this.width, 0), 0));
 	floor.setElasticity(1);
 	floor.setFriction(1);
-  floor.group = window.COLLISIONGROUP_FLOOR;
+  floor.group = Demo.COLLISIONGROUP_FLOOR;
 	floor.setLayers(NOT_GRABABLE_MASK);
 };
 
 Demo.prototype.addWalls = function() {
 	var space = this.space;
 	var wall1 = space.addShape(new cp.SegmentShape(space.staticBody, v(0, 0), v(0, this.height), 0));
-  wall1.group = window.COLLISIONGROUP_FLOOR;
 	wall1.setElasticity(1);
 	wall1.setFriction(1);
 	wall1.setLayers(NOT_GRABABLE_MASK);
 
 	var wall2 = space.addShape(new cp.SegmentShape(space.staticBody, v(this.width, 0), v(this.width, this.height), 0));
-  wall2.group = window.COLLISIONGROUP_FLOOR;
 	wall2.setElasticity(1);
 	wall2.setFriction(1);
 	wall2.setLayers(NOT_GRABABLE_MASK);
