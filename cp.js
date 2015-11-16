@@ -1945,7 +1945,7 @@ SpatialIndex.prototype.collideStatic = function(staticIndex, func)
 		var query = staticIndex.query;
 
 		this.each(function(obj) {
-			query(obj, new BB(obj.bb_l, obj.bb_b, obj.bb_r, obj.bb_t), func);
+			query.call(obj, new BB(obj.bb_l, obj.bb_b, obj.bb_r, obj.bb_t), func);
 		});
 	}
 };
@@ -2998,7 +2998,7 @@ var unthreadHelper = function(arb, body, prev, next)
 		} else {
 			prev.thread_b_next = next;
 		}
-	} else {
+	} else if(body.arbiterList === arb){
 		body.arbiterList = next;
 	}
 	
