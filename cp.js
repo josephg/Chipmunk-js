@@ -1312,7 +1312,7 @@ var BoxShape2 = cp.BoxShape2 = function(body, box)
 		box.l, box.b,
 		box.l, box.t,
 		box.r, box.t,
-		box.r, box.b,
+		box.r, box.b
 	];
 	
 	return new PolyShape(body, verts, vzero);
@@ -3734,7 +3734,7 @@ Space.prototype.setDefaultCollisionHandler = function(begin, preSolve, postSolve
 
 Space.prototype.lookupHandler = function(a, b)
 {
-	return this.collisionHandlers[hashPair(a, b)] || this.defaultHandler;
+    return this.collisionHandlers[hashPair(a, b)] || this.collisionHandlers[hashPair(b, a)] || this.defaultHandler;
 };
 
 // **** Body, Shape, and Joint Management
