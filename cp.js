@@ -1606,6 +1606,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
 
 Body.prototype.getPos = function() { return this.p; };
 Body.prototype.getVel = function() { return new Vect(this.vx, this.vy); };
+Body.prototype.getAngle = function() { return this.a; };
 Body.prototype.getAngVel = function() { return this.w; };
 
 /// Returns true if the body is sleeping.
