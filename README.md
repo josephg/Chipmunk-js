@@ -19,13 +19,13 @@ The API for Chipmunk-js is almost identical to chipmunk-physics. Except:
 - Some functions took an array-and-length. Arrays are now all simply javascript arrays, and the length argument has been removed. Eg:
 
     ```c
-cpMomentForPoly(mass, numVerts, *verts, offset);
+    cpMomentForPoly(mass, numVerts, *verts, offset);
     ```
 
     becomes:
 
     ```javascript
-cp.momentForPoly(mass, verts, offset);
+    cp.momentForPoly(mass, verts, offset);
     ```
 
 - Lots of trivial getters and setters have been removed.
