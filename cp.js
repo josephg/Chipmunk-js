@@ -1846,17 +1846,17 @@ Body.prototype.kineticEnergy = function()
 };
 
 /* Copyright (c) 2010 Scott Lembcke
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -1868,28 +1868,28 @@ Body.prototype.kineticEnergy = function()
 
 /**
 	@defgroup cpSpatialIndex cpSpatialIndex
-	
+
 	Spatial indexes are data structures that are used to accelerate collision detection
 	and spatial queries. Chipmunk provides a number of spatial index algorithms to pick from
 	and they are programmed in a generic way so that you can use them for holding more than
 	just Shapes.
-	
+
 	It works by using pointers to the objects you add and using a callback to ask your code
 	for bounding boxes when it needs them. Several types of queries can be performed an index as well
 	as reindexing and full collision information. All communication to the spatial indexes is performed
 	through callback functions.
-	
+
 	Spatial indexes should be treated as opaque structs.
 	This means you shouldn't be reading any of the fields directly.
 
 	All spatial indexes define the following methods:
-		
+
 	// The number of objects in the spatial index.
 	count = 0;
 
 	// Iterate the objects in the spatial index. @c func will be called once for each object.
 	each(func);
-	
+
 	// Returns true if the spatial index contains the given object.
 	// Most spatial indexes use hashed storage, so you must provide a hash value too.
 	contains(obj, hashid);
@@ -1899,7 +1899,7 @@ Body.prototype.kineticEnergy = function()
 
 	// Remove an object from a spatial index.
 	remove(obj, hashid);
-	
+
 	// Perform a full reindex of a spatial index.
 	reindex();
 
@@ -1928,7 +1928,7 @@ Body.prototype.kineticEnergy = function()
 var SpatialIndex = cp.SpatialIndex = function(staticIndex)
 {
 	this.staticIndex = staticIndex;
-	
+
 
 	if(staticIndex){
 		if(staticIndex.dynamicIndex){
@@ -1938,14 +1938,14 @@ var SpatialIndex = cp.SpatialIndex = function(staticIndex)
 	}
 };
 
-// Collide the objects in an index against the objects in a staticIndex using the query callback function.
+// Collide the objects in a dynamic index against the objects in a static index using the query callback function.
 SpatialIndex.prototype.collideStatic = function(staticIndex, func)
 {
 	if(staticIndex.count > 0){
-		var query = staticIndex.query;
-
-		this.each(function(obj) {
-			query(obj, new BB(obj.bb_l, obj.bb_b, obj.bb_r, obj.bb_t), func);
+		this.each(function(obj1) {
+			staticIndex.query(new BB(obj1.bb_l, obj1.bb_b, obj1.bb_r, obj1.bb_t), function (obj2) {
+				func(obj1, obj2);
+			});
 		});
 	}
 };
@@ -2998,7 +2998,7 @@ var unthreadHelper = function(arb, body, prev, next)
 		} else {
 			prev.thread_b_next = next;
 		}
-	} else {
+	} else if(body.arbiterList === arb){
 		body.arbiterList = next;
 	}
 	

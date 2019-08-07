@@ -2,7 +2,7 @@
   "author": "Joseph Gentle <josephg@gmail.com> (josephg.com)",
   "name": "chipmunk",
   "description": "Chipmunk 2d physics engine, in Javascript",
-  "version": "6.1.1",
+  "version": "6.1.2",
   "homepage": "https://github.com/josephg/chipmunk-js",
   "repository": {
     "type": "git",
@@ -12,7 +12,11 @@
   "engines": {
     "node": ">=6.2.2"
   },
-  "keywords": ["physics", "engine", "chipmunk"],
+  "keywords": [
+    "physics",
+    "engine",
+    "chipmunk"
+  ],
   "dependencies": {},
   "devDependencies": {}
 }
