@@ -10,7 +10,7 @@
   },
   "main": "cp.js",
   "engines": {
-    "node": "~0.6.5"
+    "node": ">=6.2.2"
   },
   "keywords": [
     "physics",
