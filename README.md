@@ -18,15 +18,15 @@ The API for Chipmunk-js is almost identical to chipmunk-physics. Except:
 - Most functions are wrapped by their containing objects
 - Some functions took an array-and-length. Arrays are now all simply javascript arrays, and the length argument has been removed. Eg:
 
-    ```c
+```c
 cpMomentForPoly(mass, numVerts, *verts, offset);
-    ```
+```
 
-    becomes:
+becomes:
 
-    ```javascript
+```javascript
 cp.momentForPoly(mass, verts, offset);
-    ```
+```
 
 - Lots of trivial getters and setters have been removed.
 - Lists of verticies are described using a flattened JS array of `[x1,y1, x2,y2, ...]` instead of an array of objects. For example, use `[0,0, 0,1, 1,1, 1,0]` instead of `[cp.v(0,0), cp.v(0,1), cp.v(1,1), cp.v(1,0)]`.
