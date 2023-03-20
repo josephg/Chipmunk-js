@@ -49,13 +49,13 @@ var Demo = function() {
 	this.canvas.onmousedown = function(e) {
 		e.preventDefault();
 		var rightclick = e.which === 3; // or e.button === 2;
-		self.mouse = canvas2point(e.clientX, e.clientY);
+		var point = self.mouse = canvas2point(e.clientX, e.clientY);
 
-		if(!rightclick && !self.mouseJoint) {
-			var point = canvas2point(e.clientX, e.clientY);
-		
+		if(!rightclick && !self.mouseJoint) {		
 			var shape = space.pointQueryFirst(point, GRABABLE_MASK_BIT, cp.NO_GROUP);
 			if(shape){
+				self.mouseBody.p = point;
+				
 				var body = shape.body;
 				var mouseJoint = self.mouseJoint = new cp.PivotJoint(mouseBody, body, v(0,0), body.world2Local(point));
 
